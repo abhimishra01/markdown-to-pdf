@@ -38,7 +38,10 @@
 .md-doc th[align="center"], .md-doc td[align="center"] { text-align: center; }
 .md-doc th { background: #f1f1f4; font-weight: 650; }
 .md-doc thead { display: table-header-group; }
-.md-doc td code, .md-doc td a { overflow-wrap: anywhere; }
+.md-doc td a { overflow-wrap: anywhere; }
+/* Inline code in table cells never breaks inside a word. Long code may wrap at the <wbr> points placed after / . _ - */
+.md-doc td code, .md-doc th code { white-space: nowrap; overflow-wrap: normal; word-break: keep-all; hyphens: none; }
+.md-doc td code[data-soft], .md-doc th code[data-soft] { white-space: normal; }
 .md-doc kbd { font: .85em ui-monospace, Menlo, Consolas, monospace; border: 1px solid #c8c8cf; border-bottom-width: 2px; border-radius: 4px; padding: .05em .4em; background: #fafafa; }
 .md-doc sup { line-height: 0; }
 .md-doc .footnotes { margin-top: 2em; padding-top: .5em; border-top: 1px solid #d4d4d8; font-size: .9em; color: #3a3a42; }
@@ -110,5 +113,6 @@
   body > *:not(#print-root) { display: none !important; }
   #print-root { display: block; }
   #print-root .md-doc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .md-doc table { table-layout: auto; }
   .md-doc .md-pagebreak { break-after: page; height: 0; margin: 0; border: 0; }
 }

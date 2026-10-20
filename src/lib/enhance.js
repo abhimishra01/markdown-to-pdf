@@ -1,4 +1,5 @@
 // Draws math and diagrams after the Markdown is on the page.
+import { codeBreakParts, diagramScale, LEGIBLE_SCALE } from './markdown.js';
 // KaTeX and Mermaid are big, so they are loaded here with import() and only when a document needs them.
 // A plain document never downloads either one.
 const mathCache = new Map();
@@ -23,7 +24,7 @@ function loadKatex() {
 }
 function loadMermaid() {
   mermaidPromise ??= import('mermaid').then(({ default: mermaid }) => {
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'neutral', htmlLabels: false, flowchart: { htmlLabels: false }, fontFamily: 'ui-sans-serif, system-ui, sans-serif' });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'neutral', htmlLabels: false, flowchart: { htmlLabels: false, useMaxWidth: false, nodeSpacing: 36, rankSpacing: 36, padding: 8 }, sequence: { useMaxWidth: false }, fontFamily: 'ui-sans-serif, system-ui, sans-serif' });
     return mermaid;
   });
   return mermaidPromise;
@@ -99,4 +100,31 @@ export function markLongCode(root, lines = 38) {
   for (const pre of root.querySelectorAll('pre:not(.md-mermaid)')) {
     pre.toggleAttribute('data-long', (pre.textContent.match(/\n/g) || []).length > lines);
   }
+}
+
+// Table cells: let long inline code wrap only after a separator such as / . _ -. Short code stays on one line (doc.css).
+export function softWrapTableCode(root) {
+  for (const code of root.querySelectorAll('td code, th code')) {
+    if (code.children.length || code.hasAttribute('data-soft')) continue;
+    const parts = codeBreakParts(code.textContent);
+    if (parts.length < 2) continue;
+    code.setAttribute('data-soft', '');
+    code.replaceChildren(...parts.flatMap((p, i) => (i ? [document.createElement('wbr'), p] : [p])));
+  }
+}
+
+// Draw each diagram as wide as the page allows (never larger than drawn). Returns the smallest scale used.
+export function fitDiagrams(root, availPx) {
+  let min = 1;
+  for (const box of root.querySelectorAll('.md-diagram')) {
+    const svg = box.querySelector('svg');
+    const vb = svg?.viewBox?.baseVal;
+    if (!vb || !vb.width) continue;
+    const scale = diagramScale(vb.width, availPx);
+    svg.style.width = Math.min(vb.width, availPx) + 'px';
+    svg.style.maxWidth = '100%';
+    box.toggleAttribute('data-wide', scale < LEGIBLE_SCALE);
+    min = Math.min(min, scale);
+  }
+  return min;
 }

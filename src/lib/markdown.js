@@ -414,3 +414,27 @@ A price such as $5 or $10 stays as text.
 > [!WARNING]
 > Check the page count before you print.
 `;
+
+// Table cells: long inline code may wrap, but only after a path or name separator, never inside a word.
+// Returns the pieces; the caller puts a <wbr> between them. Short code returns one piece (it stays on one line).
+export function codeBreakParts(text, minLength = 18) {
+  if (text.length < minLength) return [text];
+  return text.split(/(?<=[/._\-:,;)\]|])(?=[^/._\-:,;)\]|])/);
+}
+
+// Scale a diagram needs to fit the printable width (1 means it fits as drawn).
+// Below LEGIBLE_SCALE the text gets small, so the page should switch to landscape.
+export const LEGIBLE_SCALE = 0.7;
+export function diagramScale(naturalWidthPx, availWidthPx) {
+  if (!(naturalWidthPx > 0) || !(availWidthPx > 0)) return 1;
+  return Math.min(1, availWidthPx / naturalWidthPx);
+}
+
+// The text a visitor sees first. A saved draft wins, unless it is an untouched sample:
+// then the page's own sample replaces it, so a landing page always opens on its own example.
+export function initialText(saved, presetSample, defaultSample) {
+  const draft = saved && typeof saved.text === 'string' ? saved.text : null;
+  const untouched = draft === null || draft.trim() === '' || draft === defaultSample || (saved && saved.sample === true);
+  if (untouched) return typeof presetSample === 'string' ? presetSample : (draft === null || draft.trim() === '' ? defaultSample : draft);
+  return draft;
+}

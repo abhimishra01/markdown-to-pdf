@@ -26,6 +26,8 @@ const { preset = null } = Astro.props;
   </div>
 
   <!-- Option values must match PAPERS, MARGINS and SIZES in src/lib/markdown.js; the labels repeat their numbers. -->
+  <details id="md-opts" open class="mt-3 group/opts">
+  <summary class="flex h-11 cursor-pointer list-none items-center justify-between rounded-xl border border-edge bg-paper px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">Page options <svg class="h-4 w-4 shrink-0 text-muted transition-transform group-open/opts:rotate-180" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg></summary>
   <div role="group" aria-label="PDF options" class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
     <div><label for="opt-theme" class={lbl}>Theme</label>
       <select id="opt-theme" class={field}><option value="clean">Clean</option><option value="classic">Classic (serif)</option><option value="technical">Technical</option></select></div>
@@ -52,6 +54,8 @@ const { preset = null } = Astro.props;
       </label>
     </div>
   </div>
+  </details>
+  <script is:inline>if (matchMedia('(max-width: 639px)').matches) document.getElementById('md-opts').open = false;</script>
 
   <p class="mt-3 flex min-h-[1.5rem] flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
     <span id="md-count"></span>
@@ -137,13 +141,15 @@ const { preset = null } = Astro.props;
   }
   /* Narrow preview: wide tables scroll sideways instead of squeezing every word. */
   .preview-narrow #md-doc table { display: block; overflow-x: auto; max-width: 100%; }
+  /* A table wider than the sheet scrolls inside the preview. The PDF lets the table grow to the page. */
+  #md-sheet { overflow-x: auto; }
   :root[data-theme="dark"] #md-sheet { filter: brightness(.93); }
 </style>
 
 <script>
   import DOMPurify from 'dompurify';
-  import { tryRender, makeSanitizer, buildPageCss, estimatePages, docStats, pdfTitle, buildToc, needsMath, needsMermaid, pageInches, MARGINS, SIZES, SAMPLE, SAMPLE_MATH, PAPERS } from '../lib/markdown.js';
-  import { enhance, markLongCode } from '../lib/enhance.js';
+  import { tryRender, makeSanitizer, buildPageCss, estimatePages, docStats, pdfTitle, buildToc, needsMath, needsMermaid, pageInches, initialText, diagramScale, LEGIBLE_SCALE, MARGINS, SIZES, SAMPLE, SAMPLE_MATH, PAPERS } from '../lib/markdown.js';
+  import { enhance, markLongCode, softWrapTableCode, fitDiagrams } from '../lib/enhance.js';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const input = $<HTMLTextAreaElement>('md-input');
@@ -163,6 +169,7 @@ const { preset = null } = Astro.props;
   const KEY = 'mdpdf:v1';
   const MAX_CHARS = 5_000_000;
   let failed = false;          // the last render did not work: never print stale output
+  let sampleShown = false;     // the box still holds an untouched sample
   let renderTimer = 0, measureTimer = 0, undoTimer = 0, undoText = '';
 
   const say = (text: string) => { msgEl.textContent = text; };
@@ -181,18 +188,19 @@ const { preset = null } = Astro.props;
       pick(opt.orient, saved.orient); opt.numbers.checked = !!saved.numbers; opt.fm.checked = !!saved.fm;
     }
     // A landing page sets its own options. Its sample replaces the default sample, never the visitor's own text.
-    let text = saved && typeof saved.text === 'string' ? saved.text : SAMPLE;
     if (preset) {
       for (const k of ['theme', 'paper', 'margin', 'size', 'orient'] as const) if (preset[k]) pick(opt[k], preset[k]);
       if (typeof preset.numbers === 'boolean') opt.numbers.checked = preset.numbers;
       if (typeof preset.fm === 'boolean') opt.fm.checked = preset.fm;
-      if (typeof preset.sample === 'string' && (text === SAMPLE || text.trim() === '')) text = preset.sample;
     }
+    // A landing page opens on its own sample unless the visitor has typed their own text.
+    const text = initialText(saved, preset?.sample, SAMPLE);
+    sampleShown = text === SAMPLE || text === SAMPLE_MATH || text === preset?.sample;
     input.value = text;
   }
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ text: input.value, theme: opt.theme.value, paper: opt.paper.value, margin: opt.margin.value, size: opt.size.value, orient: opt.orient.value, numbers: opt.numbers.checked, fm: opt.fm.checked }));
+      localStorage.setItem(KEY, JSON.stringify({ text: input.value, theme: opt.theme.value, paper: opt.paper.value, margin: opt.margin.value, size: opt.size.value, orient: opt.orient.value, numbers: opt.numbers.checked, fm: opt.fm.checked, sample: sampleShown }));
     } catch {}
   }
   const settings = () => ({ paper: opt.paper.value, margin: opt.margin.value, pageNumbers: opt.numbers.checked, landscape: opt.orient.value === 'landscape' });
@@ -240,6 +248,15 @@ const { preset = null } = Astro.props;
   }
   function scheduleMeasure(delay = 300) { clearTimeout(measureTimer); measureTimer = window.setTimeout(updateCount, delay); }
 
+  // Wide diagrams are drawn to the printable width. When that makes the text small, suggest landscape.
+  function fitHint() {
+    const m = MARGINS[opt.margin.value as keyof typeof MARGINS];
+    const avail = (pageInches(opt.paper.value, settings().landscape).w - 2 * m) * 96;
+    const scale = fitDiagrams(doc, avail);
+    if (scale < LEGIBLE_SCALE && opt.orient.value !== 'landscape') say('A wide diagram is scaled down to fit. Set Orientation to Landscape to print it larger.');
+    else if (msgEl.textContent?.startsWith('A wide diagram')) say('');
+  }
+
   function render() {
     clearTimeout(renderTimer); renderTimer = 0;
     doc.className = `md-doc theme-${opt.theme.value}`;
@@ -257,9 +274,9 @@ const { preset = null } = Astro.props;
       const r = tryRender(text, sanitize, { showFrontMatter: opt.fm.checked });
       if (r.ok) {
         doc.innerHTML = r.html;
-        markLongCode(doc);
+        markLongCode(doc); softWrapTableCode(doc);
         // Math and diagrams load their code only when the document has some.
-        if (needsMath(r.html) || needsMermaid(r.html)) enhance(doc, () => { markLongCode(doc); scheduleMeasure(50); });
+        if (needsMath(r.html) || needsMermaid(r.html)) enhance(doc, () => { markLongCode(doc); fitHint(); scheduleMeasure(50); });
       }
       else {
         failed = true;
@@ -277,7 +294,7 @@ const { preset = null } = Astro.props;
     renderTimer = window.setTimeout(() => { render(); save(); }, input.value.length > 200_000 ? 500 : 150);
   }
   const applyNow = () => { render(); save(); };
-  input.addEventListener('input', () => { hideUndo(); scheduleRender(); });
+  input.addEventListener('input', () => { sampleShown = false; hideUndo(); scheduleRender(); });
   Object.values(opt).forEach((el) => el.addEventListener('change', applyNow));
   window.addEventListener('pagehide', save);
   new ResizeObserver(() => layoutSheet()).observe(scroller);
@@ -306,11 +323,12 @@ const { preset = null } = Astro.props;
       clearTimeout(undoTimer); undoTimer = window.setTimeout(hideUndo, 20000);
     }
     input.value = next;
+    sampleShown = next === SAMPLE || next === SAMPLE_MATH;
     applyNow();
     say(note);
   }
   undoBtn.addEventListener('click', () => {
-    input.value = undoText; hideUndo(); applyNow(); scroller.scrollTop = 0; say('Your text is back.'); input.focus();
+    input.value = undoText; sampleShown = false; hideUndo(); applyNow(); scroller.scrollTop = 0; say('Your text is back.'); input.focus();
   });
 
   // Files: button, picker and drag and drop.

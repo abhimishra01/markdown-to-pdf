@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
-import { parseFrontMatter, buildToc, needsMath, needsMermaid, pageInches, SAMPLE_MATH, EMOJI, parseMarkdown, renderMarkdown, tryRender, pdfTitle, splitFrontMatter, preprocess, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE } from '../src/lib/markdown.js';
+import { parseFrontMatter, buildToc, needsMath, needsMermaid, pageInches, SAMPLE_MATH, EMOJI, parseMarkdown, renderMarkdown, tryRender, pdfTitle, splitFrontMatter, preprocess, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE, codeBreakParts, diagramScale, initialText } from '../src/lib/markdown.js';
 
 const purify = createDOMPurify(new JSDOM('').window);
 const sanitize = makeSanitizer(purify);
@@ -240,4 +240,22 @@ ok('print CSS keeps headings with text and avoids splitting code, rows and alert
 });
 ok('parseMarkdown does not sanitize by itself (sanitizer is required)', () => has(parseMarkdown('<script>x</script>'), '<script>'));
 
+ok('code break parts: short code stays whole', () => assert.deepEqual(codeBreakParts('string'), ['string']));
+ok('code break parts: long code breaks after separators only', () => {
+  const parts = codeBreakParts('/api/v1/users/timeout_seconds');
+  assert.ok(parts.length > 1); assert.equal(parts.join(''), '/api/v1/users/timeout_seconds');
+  for (const p of parts.slice(0, -1)) assert.match(p, /[/._\-:,;)\]|]$/);
+});
+ok('code break parts: a long single word is not split', () => assert.deepEqual(codeBreakParts('abcdefghijklmnopqrstuvwxyz'), ['abcdefghijklmnopqrstuvwxyz']));
+ok('diagram scale', () => {
+  assert.equal(diagramScale(400, 700), 1); assert.equal(diagramScale(1400, 700), 0.5); assert.equal(diagramScale(0, 700), 1);
+});
+ok('initial text: landing sample replaces an untouched sample, not typed text', () => {
+  assert.equal(initialText(null, 'P', 'D'), 'P');
+  assert.equal(initialText({ text: 'D' }, 'P', 'D'), 'P');
+  assert.equal(initialText({ text: 'README', sample: true }, 'P', 'D'), 'P');
+  assert.equal(initialText({ text: 'mine', sample: false }, 'P', 'D'), 'mine');
+  assert.equal(initialText({ text: 'mine' }, undefined, 'D'), 'mine');
+  assert.equal(initialText(null, undefined, 'D'), 'D');
+});
 console.log(`\n${n} tests passed`);
