@@ -3,8 +3,10 @@ import '../styles/doc.css';
 const btn = 'inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-edge bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-brand focus-visible:outline-offset-2';
 const field = 'block w-full h-11 rounded-xl border border-edge bg-paper px-3 text-sm font-medium text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/30';
 const lbl = 'mb-1 block text-xs font-semibold text-muted';
+// preset: set by a landing page (sample text and options). The home page has none.
+const { preset = null } = Astro.props;
 ---
-<section id="tool" aria-label="Markdown to PDF converter" class="rounded-2xl border border-line bg-card p-3 sm:p-5 shadow-[var(--card-shadow)]">
+<section id="tool" aria-label="Markdown to PDF converter" data-preset={preset ? JSON.stringify(preset) : undefined} class="rounded-2xl border border-line bg-card p-3 sm:p-5 shadow-[var(--card-shadow)]">
   <div class="flex flex-wrap items-center gap-2">
     <div id="md-dlbar" class="dl-bar order-first w-full sm:order-last sm:ml-auto sm:w-auto">
       <button type="button" id="md-download" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-base font-bold text-white transition-colors hover:brightness-110 focus-visible:outline-offset-2 sm:w-auto aria-disabled:cursor-not-allowed aria-disabled:opacity-50">
@@ -18,24 +20,35 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
     </button>
     <input type="file" id="md-file" accept=".md,.markdown,.mdown,.txt,text/markdown,text/plain" class="sr-only" tabindex="-1" aria-label="Choose a Markdown file" />
     <button type="button" id="md-sample" class={btn}>Load sample</button>
+    <button type="button" id="md-sample-math" class={btn}>Diagram and math sample</button>
+    <button type="button" id="md-toc" class={btn} title="Adds a linked list of your headings at the cursor">Insert contents</button>
     <button type="button" id="md-clear" class={btn}>Clear</button>
   </div>
 
   <!-- Option values must match PAPERS, MARGINS and SIZES in src/lib/markdown.js; the labels repeat their numbers. -->
-  <div role="group" aria-label="PDF options" class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
+  <div role="group" aria-label="PDF options" class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
     <div><label for="opt-theme" class={lbl}>Theme</label>
       <select id="opt-theme" class={field}><option value="clean">Clean</option><option value="classic">Classic (serif)</option><option value="technical">Technical</option></select></div>
     <div><label for="opt-paper" class={lbl}>Paper</label>
       <select id="opt-paper" class={field}><option value="letter">US Letter</option><option value="a4">A4</option></select></div>
+    <div><label for="opt-orient" class={lbl}>Orientation</label>
+      <select id="opt-orient" class={field}><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
     <div><label for="opt-margin" class={lbl}>Margins</label>
       <select id="opt-margin" class={field}><option value="narrow">Narrow (0.5 in)</option><option value="normal" selected>Normal (0.75 in)</option><option value="wide">Wide (1 in)</option></select></div>
     <div><label for="opt-size" class={lbl}>Text size</label>
       <select id="opt-size" class={field}><option value="small">Small (10 pt)</option><option value="medium" selected>Medium (11 pt)</option><option value="large">Large (12 pt)</option></select></div>
-    <div class="col-span-2 sm:col-span-1">
+    <div>
       <span class={lbl}>Page numbers</span>
       <label class="flex h-11 cursor-pointer items-center gap-3 rounded-xl border border-edge bg-paper px-3 text-sm font-medium">
         <input type="checkbox" id="opt-numbers" class="h-5 w-5 accent-[var(--brand)]" />
         <span>Add to footer</span>
+      </label>
+    </div>
+    <div class="col-span-2 sm:col-span-1">
+      <span class={lbl}>Front matter</span>
+      <label class="flex h-11 cursor-pointer items-center gap-3 rounded-xl border border-edge bg-paper px-3 text-sm font-medium" title="Front matter is the block between the --- lines at the top. It is hidden unless you turn this on.">
+        <input type="checkbox" id="opt-fm" class="h-5 w-5 accent-[var(--brand)]" />
+        <span>Print as a table</span>
       </label>
     </div>
   </div>
@@ -87,6 +100,30 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
       </div>
     </div>
   </details>
+  <dialog id="md-tip" aria-labelledby="md-tip-h" class="m-auto w-[min(92vw,30rem)] rounded-2xl border border-line bg-card p-5 text-ink shadow-[var(--card-shadow)] backdrop:bg-black/50">
+    <h2 id="md-tip-h" class="text-lg font-bold">Two settings for a clean PDF</h2>
+    <p class="mt-2 text-sm text-muted">Your browser opens its print window next. In that window:</p>
+    <svg viewBox="0 0 320 128" class="mt-3 w-full rounded-lg border border-line bg-paper" role="img" aria-label="A print window with Destination set to Save as PDF and Headers and footers turned off">
+      <rect x="12" y="10" width="296" height="108" rx="8" fill="none" stroke="currentColor" stroke-opacity=".3"/>
+      <text x="26" y="36" font-size="11" fill="currentColor" fill-opacity=".6" font-family="system-ui, sans-serif">Destination</text>
+      <rect x="110" y="22" width="180" height="22" rx="5" fill="var(--brand-soft)" stroke="var(--brand)" stroke-width="2"/>
+      <text x="120" y="37" font-size="11" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">Save as PDF</text>
+      <text x="26" y="82" font-size="11" fill="currentColor" fill-opacity=".6" font-family="system-ui, sans-serif">Options</text>
+      <rect x="110" y="68" width="14" height="14" rx="3" fill="none" stroke="var(--brand)" stroke-width="2"/>
+      <text x="132" y="80" font-size="11" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">Headers and footers (off)</text>
+      <rect x="110" y="92" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-opacity=".4"/>
+      <text x="132" y="104" font-size="11" fill="currentColor" fill-opacity=".6" font-family="system-ui, sans-serif">Background graphics (optional)</text>
+    </svg>
+    <ol class="mt-3 list-decimal space-y-1 pl-5 text-sm">
+      <li>Set <strong>Destination</strong> to <strong>Save as PDF</strong>.</li>
+      <li>Turn off <strong>Headers and footers</strong>.</li>
+    </ol>
+    <label class="mt-4 flex cursor-pointer items-center gap-3 text-sm"><input type="checkbox" id="md-tip-off" class="h-5 w-5 accent-[var(--brand)]" /> <span>Do not show this again</span></label>
+    <div class="mt-4 flex flex-wrap justify-end gap-2">
+      <button type="button" id="md-tip-cancel" class={btn}>Cancel</button>
+      <button type="button" id="md-tip-go" class="inline-flex h-11 items-center justify-center rounded-xl bg-brand px-5 text-sm font-bold text-white hover:brightness-110">Open the print window</button>
+    </div>
+  </dialog>
   <noscript><p class="mt-3 rounded-lg bg-brand-soft p-3 text-sm">This tool needs JavaScript to convert Markdown.</p></noscript>
   <div id="print-root" aria-hidden="true"></div>
   <div class="h-20 sm:hidden" aria-hidden="true"></div>
@@ -105,7 +142,8 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
 
 <script>
   import DOMPurify from 'dompurify';
-  import { tryRender, makeSanitizer, buildPageCss, estimatePages, docStats, pdfTitle, PAPERS, MARGINS, SIZES, SAMPLE } from '../lib/markdown.js';
+  import { tryRender, makeSanitizer, buildPageCss, estimatePages, docStats, pdfTitle, buildToc, needsMath, needsMermaid, pageInches, MARGINS, SIZES, SAMPLE, SAMPLE_MATH, PAPERS } from '../lib/markdown.js';
+  import { enhance, markLongCode } from '../lib/enhance.js';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const input = $<HTMLTextAreaElement>('md-input');
@@ -116,8 +154,11 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   const opt = {
     theme: $<HTMLSelectElement>('opt-theme'), paper: $<HTMLSelectElement>('opt-paper'),
     margin: $<HTMLSelectElement>('opt-margin'), size: $<HTMLSelectElement>('opt-size'),
-    numbers: $<HTMLInputElement>('opt-numbers'),
+    orient: $<HTMLSelectElement>('opt-orient'),
+    numbers: $<HTMLInputElement>('opt-numbers'), fm: $<HTMLInputElement>('opt-fm'),
   };
+  let preset: any = null;
+  try { preset = JSON.parse($('tool').dataset.preset || 'null'); } catch {}
   const sanitize = makeSanitizer(DOMPurify);
   const KEY = 'mdpdf:v1';
   const MAX_CHARS = 5_000_000;
@@ -137,25 +178,33 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
     const pick = (el: HTMLSelectElement, v: unknown) => { if (typeof v === 'string' && [...el.options].some((o) => o.value === v)) el.value = v; };
     if (saved) {
       pick(opt.theme, saved.theme); pick(opt.paper, saved.paper); pick(opt.margin, saved.margin); pick(opt.size, saved.size);
-      opt.numbers.checked = !!saved.numbers;
+      pick(opt.orient, saved.orient); opt.numbers.checked = !!saved.numbers; opt.fm.checked = !!saved.fm;
     }
-    input.value = saved && typeof saved.text === 'string' ? saved.text : SAMPLE;
+    // A landing page sets its own options. Its sample replaces the default sample, never the visitor's own text.
+    let text = saved && typeof saved.text === 'string' ? saved.text : SAMPLE;
+    if (preset) {
+      for (const k of ['theme', 'paper', 'margin', 'size', 'orient'] as const) if (preset[k]) pick(opt[k], preset[k]);
+      if (typeof preset.numbers === 'boolean') opt.numbers.checked = preset.numbers;
+      if (typeof preset.fm === 'boolean') opt.fm.checked = preset.fm;
+      if (typeof preset.sample === 'string' && (text === SAMPLE || text.trim() === '')) text = preset.sample;
+    }
+    input.value = text;
   }
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ text: input.value, theme: opt.theme.value, paper: opt.paper.value, margin: opt.margin.value, size: opt.size.value, numbers: opt.numbers.checked }));
+      localStorage.setItem(KEY, JSON.stringify({ text: input.value, theme: opt.theme.value, paper: opt.paper.value, margin: opt.margin.value, size: opt.size.value, orient: opt.orient.value, numbers: opt.numbers.checked, fm: opt.fm.checked }));
     } catch {}
   }
-  const settings = () => ({ paper: opt.paper.value, margin: opt.margin.value, pageNumbers: opt.numbers.checked });
+  const settings = () => ({ paper: opt.paper.value, margin: opt.margin.value, pageNumbers: opt.numbers.checked, landscape: opt.orient.value === 'landscape' });
 
   // Preview sheet: on wide screens it has the real printable width, scaled down to fit, so line breaks match the PDF.
   // On narrow screens (phones) it fills the width and wide tables scroll.
   let lastScale = '';
   function layoutSheet() {
-    const paper = PAPERS[opt.paper.value as keyof typeof PAPERS], m = MARGINS[opt.margin.value as keyof typeof MARGINS];
+    const m = MARGINS[opt.margin.value as keyof typeof MARGINS];
     const cs = getComputedStyle(scroller);
     const avail = scroller.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const pageW = paper.widthIn * 96;
+    const pageW = pageInches(opt.paper.value, settings().landscape).w * 96;
     const wide = avail >= 480;
     scroller.classList.toggle('preview-narrow', !wide);
     if (!wide) {
@@ -175,8 +224,8 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   document.body.appendChild(meter);
   meter.addEventListener('load', () => scheduleMeasure(100), true); // images change the height when they arrive
   function measurePages() {
-    const paper = PAPERS[opt.paper.value as keyof typeof PAPERS], m = MARGINS[opt.margin.value as keyof typeof MARGINS];
-    meter.style.width = (paper.widthIn - 2 * m) * 96 + 'px';
+    const m = MARGINS[opt.margin.value as keyof typeof MARGINS];
+    meter.style.width = (pageInches(opt.paper.value, settings().landscape).w - 2 * m) * 96 + 'px';
     meter.innerHTML = `<div class="${doc.className}" style="--doc-pt:${doc.style.getPropertyValue('--doc-pt')}">${doc.innerHTML.replace(/\sid="[^"]*"/g, '')}</div>`;
     return estimatePages(meter.offsetHeight, settings());
   }
@@ -205,8 +254,13 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
       failed = true;
       doc.innerHTML = '<p class="md-error">This text is over 5 MB, which is more than the preview can show. Split it into smaller files.</p>';
     } else {
-      const r = tryRender(text, sanitize);
-      if (r.ok) doc.innerHTML = r.html;
+      const r = tryRender(text, sanitize, { showFrontMatter: opt.fm.checked });
+      if (r.ok) {
+        doc.innerHTML = r.html;
+        markLongCode(doc);
+        // Math and diagrams load their code only when the document has some.
+        if (needsMath(r.html) || needsMermaid(r.html)) enhance(doc, () => { markLongCode(doc); scheduleMeasure(50); });
+      }
       else {
         failed = true;
         doc.innerHTML = '<p class="md-error">The preview could not be built from this text. It may be nested too deeply. Remove the last thing you added and try again.</p>';
@@ -279,6 +333,23 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', (e) => e.preventDefault());
   $('md-sample').addEventListener('click', () => { replaceText(SAMPLE); input.focus(); });
+  $('md-sample-math').addEventListener('click', () => { replaceText(SAMPLE_MATH); input.focus(); });
+
+  // Insert contents: a linked list of the headings, at the cursor.
+  $('md-toc').addEventListener('click', () => {
+    const toc = buildToc(input.value);
+    if (!toc) { say('Add some headings first. A heading is a line that starts with ## and a space.'); input.focus(); return; }
+    const pos = input.selectionStart ?? 0;
+    const before = input.value.slice(0, pos);
+    const lead = before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+    const text = `${lead}## Contents\n\n${toc}\n`;
+    input.focus();
+    if (!document.execCommand || !document.execCommand('insertText', false, text)) { // insertText keeps the browser undo
+      input.setRangeText(text, pos, input.selectionEnd ?? pos, 'end');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    say('Contents added at the cursor. Headings added later need a new list.');
+  });
   $('md-clear').addEventListener('click', () => { replaceText(''); input.focus(); });
 
   // Printing: copy the rendered document into #print-root; CSS hides everything else.
@@ -306,13 +377,26 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   window.addEventListener('beforeprint', () => { if (!hiddenIds.length) preparePrint(); });
   window.addEventListener('afterprint', afterPrint);
   const touch = matchMedia('(pointer: coarse)').matches;
+  const tip = $<HTMLDialogElement>('md-tip'), TIP_KEY = 'mdpdf:notip';
+  const tipHidden = () => { try { return localStorage.getItem(TIP_KEY) === '1'; } catch { return false; } };
+  function startPrint() {
+    say(touch ? 'Follow the steps under "Saving a PDF on a phone or tablet" below.' : 'In the print dialog, choose "Save as PDF" as the destination.');
+    if (!hiddenIds.length) preparePrint();
+    window.print();
+  }
   dl.addEventListener('click', () => {
     if (input.value.trim() === '') { say('Add some Markdown first, then download.'); input.focus(); return; }
     if (renderTimer) render();
     if (failed) { say('Fix the text first. The preview could not be built.'); return; }
-    say(touch ? 'Follow the steps under "Saving a PDF on a phone or tablet" below.' : 'In the print dialog, choose "Save as PDF" as the destination.');
-    if (!hiddenIds.length) preparePrint();
-    window.print();
+    // On a computer the first click explains the two print settings. "Do not show again" skips it for good.
+    if (!touch && !tipHidden() && typeof tip.showModal === 'function') { tip.showModal(); return; }
+    startPrint();
+  });
+  $('md-tip-cancel').addEventListener('click', () => tip.close());
+  $('md-tip-go').addEventListener('click', () => {
+    if ($<HTMLInputElement>('md-tip-off').checked) { try { localStorage.setItem(TIP_KEY, '1'); } catch {} }
+    tip.close();
+    startPrint();
   });
 
   // Phones: show the sticky Download bar only while the tool is on screen and the keyboard is closed.

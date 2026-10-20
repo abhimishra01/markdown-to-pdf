@@ -54,3 +54,9 @@
 18. markdown to pdf with page numbers
 19. markdown to pdf with images
 20. chatgpt markdown to pdf
+
+## Gap fix (2026-10-20)
+- Done: Mermaid and KaTeX (bundled, lazy: loaded only when the document has a diagram or formula; KaTeX CSS and fonts in public/katex, no CDN); print-dialog tip dialog (skippable); Insert contents button; break rules (headings stay with text, short code, rows, alerts, diagrams kept whole; code over 38 lines may split); front matter as table toggle; GitHub alerts; 200+ emoji shortcodes; landscape; 10 landing pages (no watermark, no upload, readme, table of contents, page numbers, iPhone, Android, offline, math and diagrams, GitHub Markdown) linked from home; FAQ and article updated; 62 tests.
+- Lighthouse (Chrome, local): home 99/100/100/100 (unchanged). Math landing page 76 perf, 96 a11y because it loads the diagram code at start (by design); accessibility item not investigated.
+- Skipped: fonts, footer text, rich-text copy, DOCX (not in priority list).
+- Not verified: landscape and page numbers in a real print dialog; Chrome for Android page numbers.

@@ -1,0 +1,14 @@
+---
+import { landing } from '../data/landing.ts';
+import { url } from '../lib/url.ts';
+interface Props { current?: string; }
+const { current = '' } = Astro.props;
+const items = landing.filter((l) => l.slug !== current);
+---
+<section aria-labelledby="more-h" class="mx-auto max-w-6xl px-4 pt-16">
+  <h2 id="more-h" class="text-2xl font-bold tracking-tight">More ways to use this converter</h2>
+  <ul class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    {current && <li><a href={url('/')} class="block rounded-xl border border-line bg-card px-4 py-3 font-semibold text-brand-ink hover:border-brand">Markdown to PDF converter (home)</a></li>}
+    {items.map((l) => <li><a href={url(`/${l.slug}/`)} class="block rounded-xl border border-line bg-card px-4 py-3 font-semibold text-brand-ink hover:border-brand">{l.short}</a></li>)}
+  </ul>
+</section>

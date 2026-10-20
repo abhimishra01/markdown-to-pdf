@@ -1,8 +1,9 @@
 // Run: node tests/markdown.test.mjs   (or npm test)
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
-import { parseMarkdown, renderMarkdown, tryRender, pdfTitle, splitFrontMatter, preprocess, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE } from '../src/lib/markdown.js';
+import { parseFrontMatter, buildToc, needsMath, needsMermaid, pageInches, SAMPLE_MATH, EMOJI, parseMarkdown, renderMarkdown, tryRender, pdfTitle, splitFrontMatter, preprocess, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE } from '../src/lib/markdown.js';
 
 const purify = createDOMPurify(new JSDOM('').window);
 const sanitize = makeSanitizer(purify);
@@ -162,6 +163,80 @@ ok('doc stats count words and skip code fences', () => {
   assert.equal(docStats('one\n```\nlots of code words here\n```\ntwo').words, 2);
   assert.equal(docStats('   \n').empty, true);
   assert.equal(docStats(undefined).words, 0);
+});
+
+ok('emoji shortcodes are replaced; unknown ones and code stay', () => {
+  const h = renderMarkdown('Go :rocket: and :+1: not :nope: or `:rocket:` at 10:30:45', sanitize);
+  has(h, '🚀'); has(h, '👍'); has(h, ':nope:'); has(h, '<code>:rocket:</code>'); has(h, '10:30:45');
+});
+ok('GitHub alerts become styled blocks', () => {
+  const h = renderMarkdown('> [!NOTE]\n> Useful **info**.\n\n> [!warning] \n> Careful\n\n> plain quote', sanitize);
+  has(h, 'class="md-alert md-alert-note"'); has(h, 'class="md-alert-title">Note<'); has(h, 'Useful <strong>info</strong>');
+  has(h, 'md-alert-warning'); has(h, '<blockquote>'); hasNot(h, '[!NOTE]'); hasNot(h, '<p></p>');
+});
+ok('alert marker inside a code block is left alone', () => hasNot(renderMarkdown('```\n> [!NOTE]\n```', sanitize), 'md-alert'));
+ok('math: inline and block are marked for KaTeX, dollar prices are not', () => {
+  const h = renderMarkdown('Area $A = \\pi r^2$ and costs $5 or $10.\n\n$$\n\\frac{a}{b}\n$$\n', sanitize);
+  has(h, '<span class="md-math" data-math="inline">A = \\pi r^2</span>'); has(h, 'data-math="block"'); has(h, '\\frac{a}{b}');
+  has(h, 'costs $5 or $10'); assert.equal(needsMath(h), true);
+  assert.equal(needsMath(renderMarkdown('plain $5 and $6', sanitize)), false);
+});
+ok('math text is escaped and never code', () => {
+  const h = renderMarkdown('$a<b>c$ and `$x$`', sanitize);
+  has(h, 'a&lt;b&gt;c'); has(h, '<code>$x$</code>'); hasNot(h, '<b>');
+});
+ok('mermaid fence is kept as text for the browser; other code is untouched', () => {
+  const h = renderMarkdown('```mermaid\ngraph TD\n  A-->B\n```\n\n```js\nlet a\n```', sanitize);
+  has(h, '<pre class="md-mermaid">graph TD'); has(h, 'A--&gt;B'); has(h, 'hljs-keyword'); assert.equal(needsMermaid(h), true);
+  assert.equal(needsMermaid(renderMarkdown('```js\nlet a\n```', sanitize)), false);
+});
+ok('plain documents need no diagram or math code', () => {
+  const h = renderMarkdown(SAMPLE, sanitize);
+  assert.equal(needsMath(h) || needsMermaid(h), false);
+  const m = renderMarkdown(SAMPLE_MATH, sanitize);
+  assert.equal(needsMath(m) && needsMermaid(m), true); has(m, '🚀'); has(m, 'md-alert-warning');
+});
+ok('front matter parser: scalars, inline arrays, lists, quotes', () => {
+  assert.deepEqual(parseFrontMatter('title: "Acme API"\nversion: 2.4.0\ntags: [api, sdk]\nauthors:\n  - Ann\n  - Bo\n# note'), [['title', 'Acme API'], ['version', '2.4.0'], ['tags', 'api, sdk'], ['authors', 'Ann, Bo']]);
+});
+ok('front matter table: off by default, on when asked, escaped', () => {
+  const src = '---\ntitle: A <b>x</b>\nversion: 1\n---\n# Body\n';
+  hasNot(renderMarkdown(src, sanitize), 'version');
+  const h = renderMarkdown(src, sanitize, { showFrontMatter: true });
+  has(h, '<table class="md-frontmatter">'); has(h, '<th scope="row">version</th>'); has(h, '<td>1</td>'); has(h, 'A &lt;b&gt;x&lt;/b&gt;'); has(h, 'id="md-body"');
+  hasNot(renderMarkdown('# No front matter', sanitize, { showFrontMatter: true }), 'md-frontmatter');
+});
+ok('toc: lists h2 and h3, skips the lone title, ignores code, links match heading ids', () => {
+  const src = '# Title\n\n## Install\n\n```bash\n# not a heading\n```\n\n### Usage notes\n\n## Install\n\n#### Deep\n';
+  const toc = buildToc(src);
+  assert.equal(toc, '- [Install](#install)\n  - [Usage notes](#usage-notes)\n- [Install](#install-1)\n');
+  const h = renderMarkdown(toc + '\n' + src, sanitize);
+  for (const id of ['md-install', 'md-usage-notes', 'md-install-1']) { has(h, `href="#${id}"`); has(h, `id="${id}"`); }
+});
+ok('toc: no headings gives an empty string; several H1s are all kept', () => {
+  assert.equal(buildToc('just text'), '');
+  assert.equal(buildToc('# One\n\n# Two\n'), '- [One](#one)\n- [Two](#two)\n');
+  assert.equal(buildToc('Setext\n======\n\nSub\n---\n'), '- [Sub](#sub)\n');
+});
+ok('toc: an existing Contents heading is not listed', () => assert.equal(buildToc('## Contents\n\n## A\n'), '- [A](#a)\n'));
+ok('toc: punctuation in headings matches the heading id', () => {
+  const src = '## What\'s new? (v2.0)\n\n## C++ & Go\n';
+  const h = renderMarkdown(buildToc(src) + '\n' + src, sanitize);
+  const ids = [...h.matchAll(/<h2 id="([^"]+)"/g)].map((m) => m[1]);
+  for (const id of ids) has(h, `href="#${id}"`);
+});
+ok('landscape A4 swaps the lengths', () => has(buildPageCss({ paper: 'a4', landscape: true }), 'size: 297mm 210mm;'));
+ok('landscape swaps the page and the usable height', () => {
+  assert.equal(buildPageCss({ paper: 'letter', landscape: true }), '@page { size: 11in 8.5in; margin: 0.75in; }');
+  assert.deepEqual(pageInches('letter', true), { w: 11, h: 8.5 });
+  assert.equal(estimatePages(913, { landscape: true }), 2);
+  assert.equal(estimatePages(7 * 96, { landscape: true }), 1);
+  assert.equal(estimatePages(7 * 96 + 2, { landscape: true }), 2);
+});
+ok('emoji map has no empty values', () => { for (const [k, v] of Object.entries(EMOJI)) assert.ok(v, k); });
+ok('print CSS keeps headings with text and avoids splitting code, rows and alerts', () => {
+  const css = readFileSync(new URL('../src/styles/doc.css', import.meta.url), 'utf8');
+  for (const s of ['break-after: avoid', 'pre { break-inside: avoid', 'tr { break-inside: avoid', 'display: table-header-group', '.md-alert', 'orphans']) assert.ok(css.includes(s), s);
 });
 ok('parseMarkdown does not sanitize by itself (sanitizer is required)', () => has(parseMarkdown('<script>x</script>'), '<script>'));
 

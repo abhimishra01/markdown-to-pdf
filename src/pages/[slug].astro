@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import Tool from '../components/Tool.astro';
+import AdSlot from '../components/AdSlot.astro';
+import MoreUses from '../components/MoreUses.astro';
+import site from '../site.config.ts';
+import { landing } from '../data/landing.ts';
+
+export function getStaticPaths() {
+  return landing.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+const { page } = Astro.props;
+const base = `https://${site.domain}`;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: page.h1,
+    url: `${base}/${page.slug}/`,
+    description: page.description,
+    applicationCategory: site.category,
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires JavaScript',
+    inLanguage: site.locale,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: page.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  },
+];
+---
+<Base fullTitle={page.title} description={page.description} jsonLd={jsonLd}>
+  <section class="mx-auto max-w-6xl px-4 pt-10 sm:pt-16">
+    <p class="mb-3 inline-block rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand-ink">{page.tagline}</p>
+    <h1 class="max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl">{page.h1}</h1>
+    <p class="mt-4 max-w-2xl text-lg text-muted">{page.intro}</p>
+    <div class="mt-8 min-h-[30rem]"><Tool preset={page.preset} /></div>
+    <AdSlot />
+  </section>
+  <section aria-labelledby="page-h" class="mx-auto max-w-6xl px-4 pt-16">
+    <article class="prose-site">
+      <h2 id="page-h" class="first:mt-0">{page.blocks[0].h2}</h2>
+      {page.blocks.map((b, i) => (
+        <>
+          {i > 0 && <h2>{b.h2}</h2>}
+          {b.p?.map((t) => <p>{t}</p>)}
+          {b.ul && <ul>{b.ul.map((t) => <li>{t}</li>)}</ul>}
+          {b.ol && <ol>{b.ol.map((t) => <li>{t}</li>)}</ol>}
+        </>
+      ))}
+    </article>
+  </section>
+  <section aria-labelledby="faq-h" class="mx-auto max-w-6xl px-4 pt-16">
+    <h2 id="faq-h" class="text-2xl font-bold tracking-tight">Questions</h2>
+    <div class="mt-6 max-w-3xl divide-y divide-line border-y border-line">
+      {page.faq.map((f) => (
+        <details class="group py-4">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden">
+            {f.q}
+            <svg class="h-4 w-4 shrink-0 text-muted transition-transform group-open:rotate-45" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 2v12M2 8h12"/></svg>
+          </summary>
+          <p class="mt-2 text-muted">{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+  <MoreUses current={page.slug} />
+</Base>

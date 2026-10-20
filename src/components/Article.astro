@@ -34,7 +34,11 @@ import { url } from '../lib/url.ts';
         <tr><td><code>[Install](#install)</code></td><td>A link that jumps to the heading "Install", so a table of contents works</td></tr>
         <tr><td><code>&lt;details&gt;</code></td><td>A section that opens by itself in the PDF</td></tr>
         <tr><td>A line with only <code>&lt;!-- pagebreak --&gt;</code> or <code>\pagebreak</code></td><td>A new page starts there</td></tr>
-        <tr><td>A <code>---</code> block at the top</td><td>Front matter (YAML). It is removed from the PDF</td></tr>
+        <tr><td>A <code>---</code> block at the top</td><td>Front matter (YAML). Hidden by default. Turn on "Print as a table" to show it</td></tr>
+        <tr><td><code>$E = mc^2$</code> or <code>$$</code> on its own lines</td><td>A formula, drawn only when your document has one</td></tr>
+        <tr><td>A code block that starts with <code>mermaid</code></td><td>A flowchart or another diagram</td></tr>
+        <tr><td><code>&gt; [!NOTE]</code>, <code>[!TIP]</code>, <code>[!WARNING]</code></td><td>A GitHub alert block with a colored bar</td></tr>
+        <tr><td><code>:rocket:</code></td><td>An emoji</td></tr>
       </tbody>
     </table>
 
@@ -73,6 +77,8 @@ import { url } from '../lib/url.ts';
       <li>If you see a date or web address in the page margins, turn off "Headers and footers" in the print dialog.</li>
       <li>Images need a web address that allows hotlinking, or a <code>data:</code> link. Local file paths do not load in a browser. Images you link load from their own server.</li>
       <li>Your lines run together? That is normal Markdown. End a line with two spaces, or leave a blank line, to start a new line.</li>
+      <li>Headings stay with the text after them, and short code blocks and table rows do not split across pages. Very long code blocks may split.</li>
+      <li>Wide table or diagram? Choose Landscape in the Orientation menu.</li>
       <li>Need help? Write to us on the <a href={url('/contact/')}>contact page</a>.</li>
     </ul>
   </article>
