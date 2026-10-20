@@ -1,7 +1,8 @@
 ---
 import site from '../site.config.ts';
 import ThemeToggle from './ThemeToggle.astro';
-const path = Astro.url.pathname;
+import { url, routePath } from '../lib/url.ts';
+const path = routePath(Astro.url.pathname);
 const links = [
   { href: '/', label: 'Tool', hideSmall: true },
   { href: '/about/', label: 'About' },
@@ -10,14 +11,14 @@ const links = [
 ---
 <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur">
   <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-    <a href="/" class="flex items-center gap-2.5 whitespace-nowrap font-bold tracking-tight text-ink no-underline">
-      <img src="/favicon.svg" alt="" width="28" height="28" class="h-7 w-7 rounded-lg" />
-      <span>Markdown <span class="text-brand-ink">to PDF</span></span>
+    <a href={url('/')} class="flex items-center gap-2.5 whitespace-nowrap font-bold tracking-tight text-ink no-underline">
+      <img src={url('favicon.svg')} alt="" width="28" height="28" class="h-7 w-7 rounded-lg" />
+      <span>{site.name}</span>
     </a>
     <div class="flex items-center gap-1">
       <nav aria-label="Main" class="flex items-center">
         {links.map((l) => (
-          <a href={l.href} aria-current={path === l.href ? 'page' : undefined}
+          <a href={url(l.href)} aria-current={path === l.href ? 'page' : undefined}
             class={`rounded-full px-3 py-2 text-sm font-medium text-muted no-underline hover:text-ink aria-[current=page]:text-ink aria-[current=page]:bg-brand-soft max-[420px]:px-2 ${(l as any).hideSmall ? 'max-[420px]:hidden' : ''}`}>{l.label}</a>
         ))}
       </nav>

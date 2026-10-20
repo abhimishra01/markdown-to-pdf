@@ -1,5 +1,5 @@
 /* The rendered document. Used in the preview and in the print copy (#print-root).
-   Colours are fixed (not theme tokens) because this is paper: it stays white in dark mode. */
+   Colors are fixed (not theme tokens) because this is paper: it stays white in dark mode. */
 .md-doc { --doc-pt: 11pt; font-size: var(--doc-pt); line-height: 1.55; color: #1b1b1f; background: #fff; overflow-wrap: anywhere; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 .md-doc > :first-child { margin-top: 0; }
 .md-doc h1, .md-doc h2, .md-doc h3, .md-doc h4, .md-doc h5, .md-doc h6 { line-height: 1.25; font-weight: 700; margin: 1.5em 0 .5em; break-after: avoid; page-break-after: avoid; color: #111; }
@@ -59,7 +59,7 @@
 .md-doc.theme-technical tbody tr:nth-child(even) { background: #fafbfc; }
 .md-doc.theme-technical a { color: #0969da; }
 
-/* Code colours */
+/* Code colors */
 .md-doc .hljs-comment, .md-doc .hljs-quote { color: #6a737d; font-style: italic; }
 .md-doc .hljs-keyword, .md-doc .hljs-selector-tag, .md-doc .hljs-doctag, .md-doc .hljs-type, .md-doc .hljs-meta .hljs-keyword { color: #cf222e; }
 .md-doc .hljs-string, .md-doc .hljs-regexp, .md-doc .hljs-meta .hljs-string, .md-doc .hljs-addition { color: #0a3069; }
