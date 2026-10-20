@@ -299,7 +299,8 @@ const { preset = null } = Astro.props;
   const applyNow = () => { render(); save(); };
   input.addEventListener('input', () => { sampleShown = false; hideUndo(); scheduleRender(); });
   Object.values(opt).forEach((el) => el.addEventListener('change', applyNow));
-  window.addEventListener('pagehide', save);
+  // Save a pending edit when the page closes. An untouched landing page must not overwrite the visitor's saved options with its own.
+  window.addEventListener('pagehide', () => { if (renderTimer) save(); });
   new ResizeObserver(() => layoutSheet()).observe(scroller);
 
   // Heading and footnote links stay inside the preview; other links never replace the editor.
@@ -415,6 +416,10 @@ const { preset = null } = Astro.props;
   });
   $<HTMLInputElement>('md-tip-off').addEventListener('change', (e) => { try { (e.target as HTMLInputElement).checked ? localStorage.setItem(TIP_KEY, '1') : localStorage.removeItem(TIP_KEY); } catch {} });
   $('md-tip-cancel').addEventListener('click', () => tip.close());
+  tip.addEventListener('click', (e) => { // a click on the dark backdrop closes the tip
+    const r = tip.getBoundingClientRect();
+    if (e.target === tip && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) tip.close();
+  });
   $('md-tip-go').addEventListener('click', () => {
     if ($<HTMLInputElement>('md-tip-off').checked) { try { localStorage.setItem(TIP_KEY, '1'); } catch {} }
     tip.close();
