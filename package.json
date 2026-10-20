@@ -11,7 +11,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "deploy": "npm test && npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/deploy.mjs",
-    "test": "node tests/markdown.test.mjs"
+    "test": "node tests/markdown.test.mjs",
+    "build:bingemind": "npm test && SITE_MODE=bingemind astro build --outDir dist-bingemind"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
