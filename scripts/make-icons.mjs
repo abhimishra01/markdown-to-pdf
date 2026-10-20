@@ -1,5 +1,5 @@
-// Renders PNG icons and og.png from public/favicon.svg with playwright. Run: node scripts/make-icons.mjs
-import { chromium } from '/Users/moonwalker/Desktop/oqu/generic-email-agent/node_modules/playwright-core/index.mjs';
+// Renders PNG icons and og.png from public/favicon.svg. One-off: needs playwright-core (npx -y -p playwright-core node scripts/make-icons.mjs).
+import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 const svg = fs.readFileSync('public/favicon.svg', 'utf8');
 const b = await chromium.launch({ channel: 'chrome', args: ['--disable-gpu'] }); const p = await b.newPage();
