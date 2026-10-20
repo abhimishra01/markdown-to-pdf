@@ -15,7 +15,7 @@
 .md-doc li { margin: .25em 0; }
 .md-doc li > ul, .md-doc li > ol { margin: .25em 0 0; }
 .md-doc li:has(> input[type="checkbox"]), .md-doc li:has(> p:first-child > input[type="checkbox"]:first-child) { list-style: none; margin-left: -1.3em; }
-.md-doc input[type="checkbox"] { margin: 0 .5em 0 0; width: 1em; height: 1em; vertical-align: -.12em; accent-color: #222; }
+.md-doc input[type="checkbox"] { margin: 0 .5em 0 0; width: 1em; height: 1em; vertical-align: -.12em; accent-color: #222; color-scheme: light; }
 .md-doc a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
 .md-doc img { max-width: 100%; height: auto; break-inside: avoid; }
 .md-doc hr { border: 0; border-top: 1px solid #d4d4d8; margin: 1.75em 0; }
