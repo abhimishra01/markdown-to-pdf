@@ -1,0 +1,15 @@
+---
+import Page from '../layouts/Page.astro';
+import site from '../site.config.ts';
+---
+<Page title="About" description={`About ${site.name}, a free Markdown to PDF converter that runs in your browser.`}>
+  <p>{site.name} turns Markdown text into a clean PDF. {site.description}</p>
+  <h2>Why we built it</h2>
+  <p>Many Markdown converters add a watermark, cap the number of files you can make, or send your text to a server. We wanted a converter that is fast, private, and free, with a preview you can trust.</p>
+  <h2>How it works</h2>
+  <p>The page reads your Markdown in your browser and shows a live preview. When you press Download PDF, your browser prints the preview to a PDF file. Because the browser makes the file, the text stays selectable and links stay clickable. Nothing is uploaded, and there is no account.</p>
+  <h2>Who it is for</h2>
+  <p>Developers who need a PDF of a README or design doc. Writers who draft in Markdown. Students who keep notes in plain text. Anyone who wants a tidy PDF without a word processor.</p>
+  <h2>Contact</h2>
+  <p>Questions or ideas? Write to <a href={`mailto:${site.email}`}>{site.email}</a> or visit the <a href="/contact/">Contact page</a>.</p>
+</Page>

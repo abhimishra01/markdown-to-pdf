@@ -1,0 +1,71 @@
+---
+import site from '../site.config.ts';
+---
+<section aria-labelledby="about-tool" class="mx-auto max-w-6xl px-4 pt-16">
+  <article class="prose-site">
+    <h2 id="about-tool" style="margin-top:0">Convert Markdown to PDF in your browser</h2>
+    <p>This page turns Markdown text into a clean PDF. Paste your text or open a <code>.md</code> file. The preview updates as you type. When it looks right, press Download PDF. The file never leaves your device, there is no watermark, and there is no limit on how many documents you make.</p>
+    <p>People use a {site.keyword} converter for README files, design docs, meeting notes, reports, résumés, and study notes. Markdown is easy to write and easy to keep in Git. A PDF is easy to share with people who do not use Markdown, such as a manager, a client, or a teacher.</p>
+
+    <h2>How to convert a Markdown file to PDF</h2>
+    <ol>
+      <li>Paste your Markdown into the left box, or press <strong>Open .md file</strong>. You can also drag a file onto the box.</li>
+      <li>Check the preview on the right. It shows the page the way it will print.</li>
+      <li>Pick a theme, the paper size, the margins, and the text size. Turn on page numbers if you want them.</li>
+      <li>Press <strong>Download PDF</strong>. Your browser opens its print dialog.</li>
+      <li>Choose <strong>Save as PDF</strong> as the destination and save the file.</li>
+    </ol>
+    <p>The PDF has real text. You can select it, search it, and copy it. Links stay clickable. This is different from tools that take a picture of the page and put the picture in a PDF.</p>
+
+    <h2>What Markdown does this converter support?</h2>
+    <p>The converter reads GitHub-flavored Markdown. That covers what most README files and notes use.</p>
+    <table>
+      <thead><tr><th>You type</th><th>You get</th></tr></thead>
+      <tbody>
+        <tr><td><code># Title</code>, <code>## Section</code></td><td>Headings, from level 1 to level 6</td></tr>
+        <tr><td><code>**bold**</code>, <code>*italic*</code>, <code>~~gone~~</code></td><td>Bold, italic, and strikethrough text</td></tr>
+        <tr><td><code>| a | b |</code> rows with a divider line</td><td>A table, with left, center, or right alignment</td></tr>
+        <tr><td><code>- [x] done</code></td><td>A task list with checked and open boxes</td></tr>
+        <tr><td>Three backticks and a language name</td><td>A code block with syntax colors</td></tr>
+        <tr><td><code>Text[^1]</code> and <code>[^1]: Note</code></td><td>A footnote that prints at the end</td></tr>
+        <tr><td><code>&gt; quote</code></td><td>A block quote with a bar on the left</td></tr>
+      </tbody>
+    </table>
+
+    <h2>A worked example</h2>
+    <p>Say you keep a project README and need a PDF for a client. Open the file. The preview shows the title, the install steps, and a table of options. You choose the Technical theme because it fits the code blocks. You pick US Letter, normal margins, and page numbers. The sample text is about 600 words, so the status line reports about two pages. You press Download PDF, save the file, and send it. The whole job takes under a minute.</p>
+
+    <h2>Paper sizes and margins</h2>
+    <p>Use US Letter for the United States and Canada. Use A4 almost everywhere else. If you are not sure, ask the person who will print it.</p>
+    <table>
+      <thead><tr><th>Setting</th><th>Size</th><th>Good for</th></tr></thead>
+      <tbody>
+        <tr><td>US Letter</td><td>8.5 x 11 in</td><td>United States, Canada</td></tr>
+        <tr><td>A4</td><td>210 x 297 mm (8.27 x 11.69 in)</td><td>Europe, UK, Australia, and most other countries</td></tr>
+        <tr><td>Narrow margins</td><td>0.5 in</td><td>Long tables and code, fewer pages</td></tr>
+        <tr><td>Normal margins</td><td>0.75 in</td><td>Most documents</td></tr>
+        <tr><td>Wide margins</td><td>1 in</td><td>Letters, essays, and anything you will bind or mark up</td></tr>
+        <tr><td>Text size 10, 11, 12 pt</td><td>Small, medium, large</td><td>Dense notes, normal reading, easy reading</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Why use this converter?</h2>
+    <ul>
+      <li><strong>Private.</strong> Conversion happens on your device. Your text is not uploaded.</li>
+      <li><strong>No watermark and no daily limit.</strong> Make as many PDFs as you like.</li>
+      <li><strong>Live preview.</strong> You see the page as you write, and the page count updates.</li>
+      <li><strong>Safe output.</strong> The converter removes scripts and unsafe HTML from your text before it shows the preview.</li>
+      <li><strong>Works on a phone.</strong> The editor and the preview stack, and the buttons are large.</li>
+    </ul>
+
+    <h2>Tips for a better PDF</h2>
+    <ul>
+      <li>Add the language after the three backticks, for example <code>js</code> or <code>python</code>, so the code gets colors.</li>
+      <li>Keep table cells short. Wide tables look best with narrow margins.</li>
+      <li>Use headings in order. Level 1 for the title, level 2 for sections.</li>
+      <li>Page numbers print in Chrome and Edge. Other browsers may skip them. If yours does, add the numbers in a PDF viewer.</li>
+      <li>If you see a date or web address in the page margins, turn off "Headers and footers" in the print dialog.</li>
+      <li>Images need a web address that allows hotlinking, or a <code>data:</code> link. Local file paths do not load in a browser.</li>
+    </ul>
+  </article>
+</section>
