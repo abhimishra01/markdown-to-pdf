@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
-import { parseMarkdown, renderMarkdown, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE } from '../src/lib/markdown.js';
+import { parseMarkdown, renderMarkdown, tryRender, pdfTitle, splitFrontMatter, preprocess, makeSanitizer, buildPageCss, estimatePages, docStats, SAMPLE } from '../src/lib/markdown.js';
 
 const purify = createDOMPurify(new JSDOM('').window);
 const sanitize = makeSanitizer(purify);
@@ -55,6 +55,84 @@ ok('empty input gives empty output', () => assert.equal(renderMarkdown('', sanit
 ok('sample renders everything it promises', () => {
   const h = renderMarkdown(SAMPLE, sanitize);
   for (const s of ['<table>', 'checkbox', 'hljs-keyword', '<del>', 'Footnotes']) has(h, s);
+});
+
+ok('table of contents links point at the heading ids', () => {
+  const h = renderMarkdown('- [Install](#install)\n- [Usage notes](#usage-notes)\n\n## Install\n\n## Usage notes', sanitize);
+  has(h, 'href="#md-install"'); has(h, 'id="md-install"'); has(h, 'href="#md-usage-notes"'); has(h, 'id="md-usage-notes"');
+});
+ok('footnote links keep their own ids and are not rewritten twice', () => {
+  const h = renderMarkdown('Text[^a]\n\n[^a]: Note', sanitize);
+  has(h, 'href="#md-fn-a"'); hasNot(h, '#md-md-');
+});
+ok('hash and mailto links get no rel or target', () => {
+  const h = renderMarkdown('[a](#x) [b](mailto:a@b.co)', sanitize);
+  hasNot(h, 'rel='); hasNot(h, 'target=');
+});
+ok('external links open in a new tab', () => has(renderMarkdown('[a](https://example.com)', sanitize), 'target="_blank"'));
+ok('front matter is removed', () => {
+  const h = renderMarkdown('---\ntitle: Report\nauthor: Me\n---\n# Body\n', sanitize);
+  hasNot(h, 'title: Report'); hasNot(h, '<hr'); has(h, 'id="md-body"');
+});
+ok('front matter with CRLF and BOM is removed', () => hasNot(renderMarkdown('﻿---\r\ntitle: A\r\n---\r\n# B', sanitize), 'title: A'));
+ok('a leading rule is not front matter', () => {
+  const h = renderMarkdown('---\n\nSome text\n\n---\n\nMore', sanitize);
+  has(h, 'Some text'); has(h, '<hr');
+  assert.equal(splitFrontMatter('---\nplain text\n---\nx').data, '');
+});
+ok('pdf title: first H1, markup removed', () => assert.equal(pdfTitle('intro\n\n# My *Great* [Doc](http://x.co) `v2`\n## Two'), 'My Great Doc v2'));
+ok('pdf title: ignores # lines inside code fences', () => assert.equal(pdfTitle('```bash\n# comment\n```\n# Real'), 'Real'));
+ok('pdf title: setext heading and closing hashes', () => {
+  assert.equal(pdfTitle('Setext Title\n====\n'), 'Setext Title');
+  assert.equal(pdfTitle('# Closed ##'), 'Closed');
+});
+ok('pdf title: front matter title is the fallback, then "document"', () => {
+  assert.equal(pdfTitle('---\ntitle: "From YAML"\n---\nno heading'), 'From YAML');
+  assert.equal(pdfTitle('just text'), 'document');
+  assert.equal(pdfTitle(''), 'document');
+});
+ok('pdf title: unsafe file name characters are removed', () => {
+  assert.equal(pdfTitle('# a/b\\c:d?"e|f'), 'a b c d e f');
+  assert.equal(pdfTitle('# ' + 'x'.repeat(200)).length, 80);
+});
+ok('page break: comment and \\pagebreak lines', () => {
+  const h = renderMarkdown('A\n\n<!-- pagebreak -->\n\nB\n\n\\pagebreak\n\nC\n\n  <!--pagebreak-->  \nD', sanitize);
+  assert.equal((h.match(/md-pagebreak/g) || []).length, 3);
+});
+ok('page break: not inside a code fence or a sentence', () => {
+  const h = renderMarkdown('```\n\\pagebreak\n```\n\nUse \\pagebreak here', sanitize);
+  hasNot(h, 'md-pagebreak');
+});
+ok('page break marker survives the sanitizer', () => has(preprocess('a\n\\newpage\nb'), 'md-pagebreak'));
+ok('details and summary survive for print', () => {
+  const h = renderMarkdown('<details><summary>More</summary>\n\nHidden text\n\n</details>', sanitize);
+  has(h, '<details'); has(h, '<summary>More</summary>'); has(h, 'Hidden text');
+});
+ok('task list checkboxes get a label; loose lists too', () => {
+  const h = renderMarkdown('- [x] a\n\n- [ ] b', sanitize);
+  has(h, 'aria-label="Completed task"'); has(h, 'aria-label="Open task"');
+});
+ok('inputs other than checkboxes are removed', () => hasNot(renderMarkdown('<input type="image" src="https://x.test/a.png"><input type="text" value="x">', sanitize), '<input'));
+ok('more hostile input is neutralised', () => {
+  const vectors = [
+    '<base href="https://evil.test/">', '<link rel="stylesheet" href="https://evil.test/a.css">',
+    '<meta http-equiv="refresh" content="0;url=https://evil.test">', '<svg onload=alert(1)></svg>',
+    '<math><mi xlink:href="javascript:alert(1)">x</mi></math>', '[x](data:text/html,<script>alert(1)</script>)',
+    '[x](java&#9;script:alert(1))', '[x](JaVaScRiPt:alert(1))', '<form action="https://evil.test"><button>go</button></form>',
+    '<img srcset="https://evil.test/a.png 1x" src="a.png">', '<div onclick="alert(1)">x</div>', '<object data="x.swf"></object>',
+  ];
+  for (const v of vectors) {
+    const h = renderMarkdown(v, sanitize);
+    for (const bad of ['<base', '<link', '<meta', 'onload', 'onclick', 'javascript:', 'data:text', '<form', '<button', 'srcset', '<object', '<svg', '<math']) {
+      assert.ok(!h.toLowerCase().includes(bad), `${bad} survived in ${h} (from ${v})`);
+    }
+  }
+});
+ok('very deep nesting does not throw from tryRender', () => {
+  const r = tryRender('> '.repeat(20000) + 'x', sanitize);
+  assert.equal(typeof r.ok, 'boolean');
+  if (!r.ok) assert.equal(r.html, '');
+  assert.deepEqual(tryRender('# ok', sanitize).ok, true);
 });
 
 ok('page css: Letter, normal margin, no numbers', () =>

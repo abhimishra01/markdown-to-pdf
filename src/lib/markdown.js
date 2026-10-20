@@ -45,7 +45,7 @@ hljs.registerAliases(['md'], { languageName: 'markdown' });
 hljs.registerAliases(['docker'], { languageName: 'dockerfile' });
 hljs.registerAliases(['toml'], { languageName: 'ini' });
 
-export function escapeHtml(s) {
+function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
@@ -64,30 +64,105 @@ const marked = new Marked(
   markedFootnote({ prefixId: 'md-fn-', description: 'Footnotes', refMarkers: true }),
 );
 
+// A line that holds only one of these starts a new page.
+const PAGE_BREAK_LINE = /^[ \t]*(?:<!--\s*pagebreak\s*-->|\\pagebreak|\\newpage)[ \t]*$/i;
+const PAGE_BREAK_HTML = '<div class="md-pagebreak" role="separator" aria-label="Page break"></div>';
+const FRONT_MATTER = /^﻿?---[ \t]*\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/;
+
+// Split a leading YAML block (--- ... ---) from the body. A rule line at the top is not front matter.
+export function splitFrontMatter(src) {
+  const text = String(src ?? '');
+  const m = FRONT_MATTER.exec(text);
+  if (!m || !(m[1].trim() === '' || /^[\w"'-][^\n:]*:/m.test(m[1]))) return { data: '', body: text };
+  return { data: m[1], body: text.slice(m[0].length) };
+}
+
+// Everything the user typed is cleaned up here before marked sees it.
+export function preprocess(src) {
+  let fence = '';
+  return splitFrontMatter(src).body.split(/\r?\n/).map((line) => {
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+    if (f) {
+      if (!fence) fence = f[1][0];
+      else if (f[1][0] === fence) fence = '';
+    }
+    return !fence && PAGE_BREAK_LINE.test(line) ? `\n${PAGE_BREAK_HTML}\n` : line;
+  }).join('\n');
+}
+
 // Raw HTML from marked. Never put this in the page without sanitizing it.
 export function parseMarkdown(src) {
-  return marked.parse(String(src ?? ''), { async: false });
+  return marked.parse(preprocess(src), { async: false });
 }
 
 // Build a sanitizer from a DOMPurify instance (browser window, or jsdom in tests).
 export function makeSanitizer(purify) {
   purify.addHook('afterSanitizeAttributes', (node) => {
-    if (node.tagName === 'A' && node.getAttribute('href')) {
+    const tag = node.tagName;
+    if (tag === 'A' && node.getAttribute('href')) {
       const href = node.getAttribute('href');
-      if (/^https?:/i.test(href)) node.setAttribute('rel', 'noopener noreferrer');
+      if (/^https?:/i.test(href)) {
+        node.setAttribute('rel', 'noopener noreferrer');
+        node.setAttribute('target', '_blank');
+      } else if (href.startsWith('#') && href.length > 1 && !href.startsWith('#md-')) {
+        // Headings get the id "md-<slug>", so a table of contents link like #install must point there.
+        node.setAttribute('href', '#md-' + href.slice(1));
+      }
     }
-    if (node.tagName === 'IMG') node.setAttribute('loading', 'eager');
+    if (tag === 'IMG') node.setAttribute('loading', 'eager');
+    if (tag === 'INPUT') {
+      if (node.getAttribute('type') !== 'checkbox') node.remove();
+      else node.setAttribute('aria-label', node.hasAttribute('checked') ? 'Completed task' : 'Open task');
+    }
   });
   return (html) => purify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style', 'form', 'button', 'textarea', 'select', 'option'],
-    FORBID_ATTR: ['style', 'target', 'srcset'],
-    ADD_ATTR: ['checked', 'disabled', 'type'],
+    FORBID_ATTR: ['style', 'srcset'],
+    ADD_ATTR: ['checked', 'disabled', 'type', 'target'],
   });
 }
 
 export function renderMarkdown(src, sanitize) {
   return sanitize(parseMarkdown(src));
+}
+
+// Never throws: marked can overflow its stack on very deep input.
+export function tryRender(src, sanitize) {
+  try { return { ok: true, html: renderMarkdown(src, sanitize) }; } catch { return { ok: false, html: '' }; }
+}
+
+// Plain text of one line of Markdown: no links, emphasis, code marks or tags.
+function plainInline(s) {
+  return s
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[`*_~]/g, '')
+    .replace(/\\([\\`*_{}\[\]()#+\-.!])/g, '$1')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// File name for the PDF: first H1 (or front matter title), made safe for any file system.
+export function pdfTitle(src) {
+  const { data, body } = splitFrontMatter(src);
+  let fence = '', title = '';
+  const lines = body.split(/\r?\n/);
+  for (let i = 0; i < lines.length && !title; i++) {
+    const line = lines[i];
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+    if (f) { if (!fence) fence = f[1][0]; else if (f[1][0] === fence) fence = ''; continue; }
+    if (fence) continue;
+    const atx = /^ {0,3}#[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
+    if (atx) title = plainInline(atx[1]);
+    else if (/^ {0,3}=+[ \t]*$/.test(lines[i + 1] || '') && line.trim() && !/^\s*[-*+>]/.test(line)) title = plainInline(line);
+  }
+  if (!title) {
+    const t = /^title:[ \t]*(.+)$/im.exec(data);
+    if (t) title = plainInline(t[1].replace(/^(["'])(.*)\1$/, '$2'));
+  }
+  const safe = title.replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').replace(/^[. ]+|[. ]+$/g, '').slice(0, 80).trim();
+  return safe || 'document';
 }
 
 export const PAPERS = {
