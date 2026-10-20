@@ -1,20 +1,22 @@
 ---
 import site from '../site.config.ts';
+import { url } from '../lib/url.ts';
 ---
 <section aria-labelledby="about-tool" class="mx-auto max-w-6xl px-4 pt-16">
   <article class="prose-site">
-    <h2 id="about-tool" style="margin-top:0">Convert Markdown to PDF in your browser</h2>
-    <p>This page turns Markdown text into a clean PDF. Paste your text or open a <code>.md</code> file. The preview updates as you type. When it looks right, press Download PDF. The file never leaves your device, there is no watermark, and there is no limit on how many documents you make.</p>
+    <h2 id="about-tool" class="first:mt-0">Convert Markdown to PDF in your browser</h2>
+    <p>This page turns Markdown text into a clean PDF. Paste your text or open a <code>.md</code> file. The preview updates as you type. When it looks right, press Download PDF. The file never leaves your device (see the <a href={url('/privacy/')}>privacy policy</a>), there is no watermark, and there is no limit on how many documents you make.</p>
     <p>People use a {site.keyword} converter for README files, design docs, meeting notes, reports, résumés, and study notes. Markdown is easy to write and easy to keep in Git. A PDF is easy to share with people who do not use Markdown, such as a manager, a client, or a teacher.</p>
 
     <h2>How to convert a Markdown file to PDF</h2>
     <ol>
-      <li>Paste your Markdown into the left box, or press <strong>Open .md file</strong>. You can also drag a file onto the box.</li>
-      <li>Check the preview on the right. It shows the page the way it will print.</li>
+      <li>Paste your Markdown into the editor, or press <strong>Open .md file</strong>. You can also drag a file onto the box.</li>
+      <li>Check the preview. It shows the page at the paper size and margins you chose.</li>
       <li>Pick a theme, the paper size, the margins, and the text size. Turn on page numbers if you want them.</li>
       <li>Press <strong>Download PDF</strong>. Your browser opens its print dialog.</li>
-      <li>Choose <strong>Save as PDF</strong> as the destination and save the file.</li>
+      <li>Choose <strong>Save as PDF</strong> as the destination and save the file. The file name comes from your first heading.</li>
     </ol>
+    <p>On a phone, the Download button stays at the bottom of the screen, and the steps for iPhone and Android are under the tool.</p>
     <p>The PDF has real text. You can select it, search it, and copy it. Links stay clickable. This is different from tools that take a picture of the page and put the picture in a PDF.</p>
 
     <h2>What Markdown does this converter support?</h2>
@@ -29,16 +31,20 @@ import site from '../site.config.ts';
         <tr><td>Three backticks and a language name</td><td>A code block with syntax colors</td></tr>
         <tr><td><code>Text[^1]</code> and <code>[^1]: Note</code></td><td>A footnote that prints at the end</td></tr>
         <tr><td><code>&gt; quote</code></td><td>A block quote with a bar on the left</td></tr>
+        <tr><td><code>[Install](#install)</code></td><td>A link that jumps to the heading "Install", so a table of contents works</td></tr>
+        <tr><td><code>&lt;details&gt;</code></td><td>A section that opens by itself in the PDF</td></tr>
+        <tr><td>A line with only <code>&lt;!-- pagebreak --&gt;</code> or <code>\pagebreak</code></td><td>A new page starts there</td></tr>
+        <tr><td>A <code>---</code> block at the top</td><td>Front matter (YAML). It is removed from the PDF</td></tr>
       </tbody>
     </table>
 
     <h2>A worked example</h2>
-    <p>Say you keep a project README and need a PDF for a client. Open the file. The preview shows the title, the install steps, and a table of options. You choose the Technical theme because it fits the code blocks. You pick US Letter, normal margins, and page numbers. The sample text is about 600 words, so the status line reports about two pages. You press Download PDF, save the file, and send it. The whole job takes under a minute.</p>
+    <p>Say you keep a project README and need a PDF for a client. Open the file. The preview shows the title, the install steps, and a table of options. You choose the Technical theme because it fits the code blocks. You pick US Letter, normal margins, and page numbers. A README of about 600 words runs to about two pages, and the status line under the buttons shows the count. You press Download PDF, save the file, and send it. The whole job takes under a minute.</p>
 
     <h2>Paper sizes and margins</h2>
     <p>Use US Letter for the United States and Canada. Use A4 almost everywhere else. If you are not sure, ask the person who will print it.</p>
     <table>
-      <thead><tr><th>Setting</th><th>Size</th><th>Good for</th></tr></thead>
+      <thead><tr><th>Option</th><th>Value</th><th>Good for</th></tr></thead>
       <tbody>
         <tr><td>US Letter</td><td>8.5 x 11 in</td><td>United States, Canada</td></tr>
         <tr><td>A4</td><td>210 x 297 mm (8.27 x 11.69 in)</td><td>Europe, UK, Australia, and most other countries</td></tr>
@@ -65,7 +71,9 @@ import site from '../site.config.ts';
       <li>Use headings in order. Level 1 for the title, level 2 for sections.</li>
       <li>Page numbers print in Chrome and Edge. Other browsers may skip them. If yours does, add the numbers in a PDF viewer.</li>
       <li>If you see a date or web address in the page margins, turn off "Headers and footers" in the print dialog.</li>
-      <li>Images need a web address that allows hotlinking, or a <code>data:</code> link. Local file paths do not load in a browser.</li>
+      <li>Images need a web address that allows hotlinking, or a <code>data:</code> link. Local file paths do not load in a browser. Images you link load from their own server.</li>
+      <li>Your lines run together? That is normal Markdown. End a line with two spaces, or leave a blank line, to start a new line.</li>
+      <li>Need help? Write to us on the <a href={url('/contact/')}>contact page</a>.</li>
     </ul>
   </article>
 </section>

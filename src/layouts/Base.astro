@@ -46,7 +46,7 @@ const image = site.ogImage ? new URL(site.ogImage, base).href : '';
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     {image && <meta name="twitter:image" content={image} />}
-    {jsonLd.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d)} />)}
+    {jsonLd.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d).replace(/</g, '\\u003c')} />)}
     <Analytics />
   </head>
   <body class="min-h-screen antialiased">

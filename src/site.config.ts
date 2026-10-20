@@ -6,7 +6,7 @@ export default {
   cloudflareProject: 'markdown-to-pdf',    // Cloudflare Pages project name (used by npm run deploy)
   keyword: 'markdown to pdf',         // main keyword
   h1: 'Markdown to PDF',              // exact text of the page H1
-  title: 'Markdown to PDF Converter: Free, No Upload', // home page <title>, under 60 characters
+  title: 'Markdown to PDF Converter Online: Free, No Upload', // home page <title>, under 60 characters
   keywords: ['markdown to pdf converter', 'convert markdown to pdf online', 'md to pdf', 'markdown to pdf free', 'markdown editor with preview', 'readme to pdf'], // supporting keywords
   tagline: 'Free, private, no watermark',  // short line shown above the page heading
   description:

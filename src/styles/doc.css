@@ -1,8 +1,8 @@
 /* The rendered document. Used in the preview and in the print copy (#print-root).
    Colors are fixed (not theme tokens) because this is paper: it stays white in dark mode. */
-.md-doc { --doc-pt: 11pt; font-size: var(--doc-pt); line-height: 1.55; color: #1b1b1f; background: #fff; overflow-wrap: anywhere; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.md-doc { --doc-pt: 11pt; font-size: var(--doc-pt); line-height: 1.55; color: #1b1b1f; background: #fff; overflow-wrap: break-word; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 .md-doc > :first-child { margin-top: 0; }
-.md-doc h1, .md-doc h2, .md-doc h3, .md-doc h4, .md-doc h5, .md-doc h6 { line-height: 1.25; font-weight: 700; margin: 1.5em 0 .5em; break-after: avoid; page-break-after: avoid; color: #111; }
+.md-doc h1, .md-doc h2, .md-doc h3, .md-doc h4, .md-doc h5, .md-doc h6 { line-height: 1.25; font-weight: 700; margin: 1.5em 0 .5em; break-after: avoid; color: #111; }
 .md-doc h1 { font-size: 2em; margin-top: 0; letter-spacing: -.02em; }
 .md-doc h2 { font-size: 1.5em; letter-spacing: -.01em; }
 .md-doc h3 { font-size: 1.2em; }
@@ -14,8 +14,8 @@
 .md-doc ol { list-style: decimal; }
 .md-doc li { margin: .25em 0; }
 .md-doc li > ul, .md-doc li > ol { margin: .25em 0 0; }
-.md-doc li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.3em; }
-.md-doc input[type="checkbox"] { margin: 0 .5em 0 0; width: 1em; height: 1em; vertical-align: -.12em; accent-color: #444; }
+.md-doc li:has(> input[type="checkbox"]), .md-doc li:has(> p:first-child > input[type="checkbox"]:first-child) { list-style: none; margin-left: -1.3em; }
+.md-doc input[type="checkbox"] { margin: 0 .5em 0 0; width: 1em; height: 1em; vertical-align: -.12em; accent-color: #222; }
 .md-doc a { color: #1d4ed8; text-decoration: underline; text-underline-offset: 2px; }
 .md-doc img { max-width: 100%; height: auto; break-inside: avoid; }
 .md-doc hr { border: 0; border-top: 1px solid #d4d4d8; margin: 1.75em 0; }
@@ -30,12 +30,12 @@
 .md-doc th[align="center"], .md-doc td[align="center"] { text-align: center; }
 .md-doc th { background: #f1f1f4; font-weight: 650; }
 .md-doc thead { display: table-header-group; }
-.md-doc tr { break-inside: avoid; page-break-inside: avoid; }
+.md-doc tr { break-inside: avoid; }
+.md-doc td code, .md-doc td a { overflow-wrap: anywhere; }
 .md-doc kbd { font: .85em ui-monospace, Menlo, Consolas, monospace; border: 1px solid #c8c8cf; border-bottom-width: 2px; border-radius: 4px; padding: .05em .4em; background: #fafafa; }
 .md-doc sup { line-height: 0; }
-.md-doc .footnotes, .md-doc section[data-footnotes] { margin-top: 2em; padding-top: .5em; border-top: 1px solid #d4d4d8; font-size: .9em; color: #3a3a42; }
-.md-doc section[data-footnotes] h2 { font-size: 1em; text-transform: uppercase; letter-spacing: .05em; margin-top: .5em; }
-.md-doc [data-footnote-ref], .md-doc [data-footnote-backref] { text-decoration: none; }
+.md-doc .footnotes { margin-top: 2em; padding-top: .5em; border-top: 1px solid #d4d4d8; font-size: .9em; color: #3a3a42; }
+.md-doc [data-md-fn-ref], .md-doc [data-md-fn-backref] { text-decoration: none; }
 .md-doc .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Theme: Classic (serif, book-like) */
@@ -59,6 +59,12 @@
 .md-doc.theme-technical tbody tr:nth-child(even) { background: #fafbfc; }
 .md-doc.theme-technical a { color: #0969da; }
 
+/* Page break marker: invisible on paper, a dashed line in the preview. */
+.md-pagebreak { position: relative; height: 0; margin: 1.5em 0; border-top: 2px dashed #b8b8c0; }
+.md-pagebreak::after { content: "Page break"; position: absolute; right: 0; top: -.9em; font: 600 .7em ui-sans-serif, system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #70707a; background: #fff; padding: 0 .4em; }
+.md-empty, .md-error { color: #70707a; font-style: italic; }
+.md-error { color: #b42318; font-style: normal; }
+
 /* Code colors */
 .md-doc .hljs-comment, .md-doc .hljs-quote { color: #6a737d; font-style: italic; }
 .md-doc .hljs-keyword, .md-doc .hljs-selector-tag, .md-doc .hljs-doctag, .md-doc .hljs-type, .md-doc .hljs-meta .hljs-keyword { color: #cf222e; }
@@ -75,9 +81,11 @@
 /* Print: only #print-root is shown. JavaScript fills it just before printing. */
 #print-root { display: none; }
 @media print {
+  .md-pagebreak { border: 0; }
+  .md-pagebreak::after { content: none; }
   html, body { background: #fff !important; }
   body > *:not(#print-root) { display: none !important; }
   #print-root { display: block; }
   #print-root .md-doc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .md-doc a[href^="http"]:after { content: none; }
+  .md-doc .md-pagebreak { break-after: page; height: 0; margin: 0; border: 0; }
 }

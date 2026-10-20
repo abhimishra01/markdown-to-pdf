@@ -3,11 +3,12 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
+  "engines": { "node": ">=22.12" },
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "deploy": "npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/deploy.mjs",
+    "deploy": "npm test && npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/deploy.mjs",
     "test": "node tests/markdown.test.mjs"
   },
   "dependencies": {

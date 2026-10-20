@@ -6,19 +6,22 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
 ---
 <section id="tool" aria-label="Markdown to PDF converter" class="rounded-2xl border border-line bg-card p-3 sm:p-5 sm:shadow-[6px_6px_0_0_var(--line)]">
   <div class="flex flex-wrap items-center gap-2">
-    <button type="button" id="md-download" class="order-first inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-base font-bold text-white transition-colors hover:brightness-110 focus-visible:outline-offset-2 sm:order-last sm:ml-auto sm:w-auto aria-disabled:cursor-not-allowed aria-disabled:opacity-50">
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
-      Download PDF
-    </button>
+    <div id="md-dlbar" class="dl-bar order-first w-full sm:order-last sm:ml-auto sm:w-auto">
+      <button type="button" id="md-download" class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-base font-bold text-white transition-colors hover:brightness-110 focus-visible:outline-offset-2 sm:w-auto aria-disabled:cursor-not-allowed aria-disabled:opacity-50">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
+        Download PDF
+      </button>
+    </div>
     <button type="button" id="md-open" class={btn}>
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       Open .md file
     </button>
     <input type="file" id="md-file" accept=".md,.markdown,.mdown,.txt,text/markdown,text/plain" class="sr-only" tabindex="-1" aria-label="Choose a Markdown file" />
-    <button type="button" id="md-sample" class={btn}>Sample</button>
+    <button type="button" id="md-sample" class={btn}>Load sample</button>
     <button type="button" id="md-clear" class={btn}>Clear</button>
   </div>
 
+  <!-- Option values must match PAPERS, MARGINS and SIZES in src/lib/markdown.js; the labels repeat their numbers. -->
   <div role="group" aria-label="PDF options" class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
     <div><label for="opt-theme" class={lbl}>Theme</label>
       <select id="opt-theme" class={field}><option value="clean">Clean</option><option value="classic">Classic (serif)</option><option value="technical">Technical</option></select></div>
@@ -37,7 +40,11 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
     </div>
   </div>
 
-  <p id="md-status" role="status" aria-live="polite" class="mt-3 min-h-[1.5rem] text-sm text-muted">&nbsp;</p>
+  <p class="mt-3 flex min-h-[1.5rem] flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+    <span id="md-count"></span>
+    <span id="md-msg" role="status" aria-live="polite"></span>
+    <button type="button" id="md-undo" hidden class="rounded-md px-2 py-1 font-semibold text-brand-ink underline underline-offset-2">Undo</button>
+  </p>
 
   <div class="mt-1 grid gap-3 lg:grid-cols-2">
     <div>
@@ -48,35 +55,63 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
     <div>
       <h2 id="md-preview-h" class="mb-1 text-sm font-semibold">Preview <span class="font-normal text-muted">(what the PDF will look like)</span></h2>
       <div id="md-scroll" tabindex="0" role="region" aria-labelledby="md-preview-h"
-        class="h-96 overflow-auto rounded-xl border border-line bg-[#e6e4de] p-2 dark:bg-[#0a0a0c] sm:h-[30rem] sm:p-3 lg:h-[40rem]">
-        <div id="md-frame" class="mx-auto max-w-[8.5in]">
-          <div id="md-sheet" class="bg-white p-5 shadow-[0_1px_8px_rgba(0,0,0,.18)] sm:p-8">
-            <div id="md-doc" class="md-doc theme-clean"></div>
-          </div>
+        class="h-96 overflow-auto rounded-xl border border-line bg-[#e6e4de] p-2 [scrollbar-gutter:stable] dark:bg-[#0a0a0c] sm:h-[30rem] sm:p-3 lg:h-[40rem]">
+        <div id="md-sheet" class="mx-auto bg-white p-5 shadow-[0_1px_8px_rgba(0,0,0,.18)] sm:p-8">
+          <div id="md-doc" class="md-doc theme-clean"></div>
         </div>
       </div>
     </div>
   </div>
 
   <p class="mt-3 text-sm text-muted">
-    The button opens your browser print dialog. Choose <strong class="text-ink">Save as PDF</strong> as the destination. For a clean page, turn off "Headers and footers". Everything stays on your device.
+    The button opens your browser print dialog. Choose <strong class="text-ink">Save as PDF</strong> as the destination. For a clean page, turn off "Headers and footers". The file is named after your first heading. Everything stays on your device.
   </p>
+  <details class="mt-2 text-sm text-muted">
+    <summary class="cursor-pointer font-semibold text-ink">Saving a PDF on a phone or tablet</summary>
+    <div class="mt-2 grid gap-3 sm:grid-cols-2">
+      <div>
+        <p class="font-semibold text-ink">iPhone and iPad (Safari)</p>
+        <ol class="mt-1 list-decimal space-y-1 pl-5">
+          <li>Press Download PDF.</li>
+          <li>On the page preview, spread two fingers apart. The PDF opens full screen.</li>
+          <li>Tap the Share button, then Save to Files.</li>
+        </ol>
+      </div>
+      <div>
+        <p class="font-semibold text-ink">Android (Chrome)</p>
+        <ol class="mt-1 list-decimal space-y-1 pl-5">
+          <li>Press Download PDF.</li>
+          <li>At the top of the print screen, set Destination to Save as PDF.</li>
+          <li>Tap the round PDF button and choose where to save.</li>
+        </ol>
+      </div>
+    </div>
+  </details>
   <noscript><p class="mt-3 rounded-lg bg-brand-soft p-3 text-sm">This tool needs JavaScript to convert Markdown.</p></noscript>
   <div id="print-root" aria-hidden="true"></div>
+  <div class="h-20 sm:hidden" aria-hidden="true"></div>
 </section>
 
 <style is:global>
-  .md-empty { color: #70707a; font-style: italic; }
+  /* Phones: the Download button sticks to the bottom while the tool is on screen. */
+  @media (max-width: 639px) {
+    .dl-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--paper) 94%, transparent); border-top: 1px solid var(--line); backdrop-filter: blur(8px); }
+    .dl-bar[data-off] { display: none; }
+  }
+  /* Narrow preview: wide tables scroll sideways instead of squeezing every word. */
+  .preview-narrow #md-doc table { display: block; overflow-x: auto; max-width: 100%; }
+  :root[data-theme="dark"] #md-sheet { filter: brightness(.93); }
 </style>
 
 <script>
   import DOMPurify from 'dompurify';
-  import { renderMarkdown, makeSanitizer, buildPageCss, estimatePages, docStats, PAPERS, MARGINS, SIZES, SAMPLE } from '../lib/markdown.js';
+  import { tryRender, makeSanitizer, buildPageCss, estimatePages, docStats, pdfTitle, PAPERS, MARGINS, SIZES, SAMPLE } from '../lib/markdown.js';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const input = $<HTMLTextAreaElement>('md-input');
-  const doc = $('md-doc'), scroller = $('md-scroll');
-  const status = $('md-status'), dl = $<HTMLButtonElement>('md-download');
+  const doc = $('md-doc'), sheet = $('md-sheet'), scroller = $('md-scroll');
+  const countEl = $('md-count'), msgEl = $('md-msg'), undoBtn = $<HTMLButtonElement>('md-undo');
+  const dl = $<HTMLButtonElement>('md-download'), dlBar = $('md-dlbar');
   const fileInput = $<HTMLInputElement>('md-file');
   const opt = {
     theme: $<HTMLSelectElement>('opt-theme'), paper: $<HTMLSelectElement>('opt-paper'),
@@ -85,6 +120,11 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   };
   const sanitize = makeSanitizer(DOMPurify);
   const KEY = 'mdpdf:v1';
+  const MAX_CHARS = 5_000_000;
+  let failed = false;          // the last render did not work: never print stale output
+  let renderTimer = 0, measureTimer = 0, undoTimer = 0, undoText = '';
+
+  const say = (text: string) => { msgEl.textContent = text; };
 
   // The @page rule lives in its own style element so print uses the chosen paper and margins.
   const pageStyle = document.createElement('style');
@@ -108,82 +148,179 @@ const lbl = 'mb-1 block text-xs font-semibold text-muted';
   }
   const settings = () => ({ paper: opt.paper.value, margin: opt.margin.value, pageNumbers: opt.numbers.checked });
 
+  // Preview sheet: on wide screens it has the real printable width, scaled down to fit, so line breaks match the PDF.
+  // On narrow screens (phones) it fills the width and wide tables scroll.
+  let lastScale = '';
+  function layoutSheet() {
+    const paper = PAPERS[opt.paper.value as keyof typeof PAPERS], m = MARGINS[opt.margin.value as keyof typeof MARGINS];
+    const cs = getComputedStyle(scroller);
+    const avail = scroller.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const pageW = paper.widthIn * 96;
+    const wide = avail >= 480;
+    scroller.classList.toggle('preview-narrow', !wide);
+    if (!wide) {
+      sheet.style.width = ''; sheet.style.padding = ''; sheet.style.zoom = ''; lastScale = '';
+      return;
+    }
+    const scale = Math.min(1, avail / pageW).toFixed(3);
+    sheet.style.width = pageW + 'px';
+    sheet.style.padding = m * 96 + 'px';
+    if (scale !== lastScale) { sheet.style.zoom = scale; lastScale = scale; }
+  }
+
   // Page count: lay the same HTML out at the real printable width in a hidden box and measure it.
   const meter = document.createElement('div');
   meter.setAttribute('aria-hidden', 'true');
   meter.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none';
   document.body.appendChild(meter);
+  meter.addEventListener('load', () => scheduleMeasure(100), true); // images change the height when they arrive
   function measurePages() {
     const paper = PAPERS[opt.paper.value as keyof typeof PAPERS], m = MARGINS[opt.margin.value as keyof typeof MARGINS];
     meter.style.width = (paper.widthIn - 2 * m) * 96 + 'px';
-    meter.innerHTML = `<div class="${doc.className}" style="--doc-pt:${doc.style.getPropertyValue('--doc-pt')}">${doc.innerHTML}</div>`;
+    meter.innerHTML = `<div class="${doc.className}" style="--doc-pt:${doc.style.getPropertyValue('--doc-pt')}">${doc.innerHTML.replace(/\sid="[^"]*"/g, '')}</div>`;
     return estimatePages(meter.offsetHeight, settings());
   }
 
-  function updateStatus() {
+  function updateCount() {
+    if (failed) { countEl.textContent = ''; return; }
     const s = docStats(input.value);
-    if (s.empty) { status.textContent = 'Nothing to convert yet. Paste or type some Markdown.'; return; }
+    if (s.empty) { countEl.textContent = 'Nothing to convert yet. Paste or type some Markdown.'; return; }
     const pages = measurePages();
     const words = `${s.words.toLocaleString('en-US')} ${s.words === 1 ? 'word' : 'words'}`;
-    status.textContent = pages ? `${words}, about ${pages} ${pages === 1 ? 'page' : 'pages'} (${PAPERS[opt.paper.value as keyof typeof PAPERS].label}).` : `${words}.`;
+    countEl.textContent = pages ? `${words}, about ${pages} ${pages === 1 ? 'page' : 'pages'} (${PAPERS[opt.paper.value as keyof typeof PAPERS].label}).` : `${words}.`;
   }
+  function scheduleMeasure(delay = 300) { clearTimeout(measureTimer); measureTimer = window.setTimeout(updateCount, delay); }
 
   function render() {
-    const empty = input.value.trim() === '';
+    clearTimeout(renderTimer); renderTimer = 0;
     doc.className = `md-doc theme-${opt.theme.value}`;
     doc.style.setProperty('--doc-pt', SIZES[opt.size.value as keyof typeof SIZES] + 'pt');
     pageStyle.textContent = buildPageCss(settings());
-    doc.innerHTML = empty ? '<p class="md-empty">Your preview appears here.</p>' : renderMarkdown(input.value, sanitize);
-    dl.setAttribute('aria-disabled', String(empty));
-    updateStatus();
+    layoutSheet();
+    const text = input.value;
+    failed = false;
+    if (text.trim() === '') {
+      doc.innerHTML = '<p class="md-empty">Your preview appears here.</p>';
+    } else if (text.length > MAX_CHARS) {
+      failed = true;
+      doc.innerHTML = '<p class="md-error">This text is over 5 MB, which is more than the preview can show. Split it into smaller files.</p>';
+    } else {
+      const r = tryRender(text, sanitize);
+      if (r.ok) doc.innerHTML = r.html;
+      else {
+        failed = true;
+        doc.innerHTML = '<p class="md-error">The preview could not be built from this text. It may be nested too deeply. Remove the last thing you added and try again.</p>';
+      }
+    }
+    if (failed) say('The text could not be converted.'); else if (msgEl.textContent === 'The text could not be converted.') say('');
+    dl.setAttribute('aria-disabled', String(failed || text.trim() === ''));
+    scheduleMeasure();
   }
 
-  let raf = 0;
-  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(render); };
-  input.addEventListener('input', () => { save(); schedule(); });
-  Object.values(opt).forEach((el) => el.addEventListener('change', () => { save(); schedule(); }));
+  // Typing waits a moment so large documents do not rebuild on every key. Option changes apply at once.
+  function scheduleRender() {
+    clearTimeout(renderTimer);
+    renderTimer = window.setTimeout(() => { render(); save(); }, input.value.length > 200_000 ? 500 : 150);
+  }
+  const applyNow = () => { render(); save(); };
+  input.addEventListener('input', () => { hideUndo(); scheduleRender(); });
+  Object.values(opt).forEach((el) => el.addEventListener('change', applyNow));
+  window.addEventListener('pagehide', save);
+  new ResizeObserver(() => layoutSheet()).observe(scroller);
 
-  // Footnote and heading links stay inside the preview.
+  // Heading and footnote links stay inside the preview; other links never replace the editor.
   doc.addEventListener('click', (e) => {
-    const a = (e.target as HTMLElement).closest('a[href^="#"]') as HTMLAnchorElement | null;
+    const a = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
     if (!a) return;
+    const href = a.getAttribute('href')!;
+    if (/^(https?:|mailto:|tel:)/i.test(href)) return; // external links open in a new tab
     e.preventDefault();
-    const t = doc.querySelector(`#${CSS.escape(a.getAttribute('href')!.slice(1))}`);
+    if (!href.startsWith('#')) return;
+    if (hiddenIds.length) afterPrint(); // a print dialog that never reported back
+    let id = href.slice(1);
+    try { id = decodeURIComponent(id); } catch {}
+    const t = doc.querySelector(`[id="${CSS.escape(id)}"]`);
     if (t) scroller.scrollTop += t.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+  });
+
+  // Replacing the text: keep one copy so Undo can bring it back.
+  function hideUndo() { clearTimeout(undoTimer); undoBtn.hidden = true; }
+  function replaceText(next: string, note = '') {
+    const prev = input.value;
+    if (prev.trim() !== '' && prev !== next) {
+      undoText = prev; undoBtn.hidden = false;
+      clearTimeout(undoTimer); undoTimer = window.setTimeout(hideUndo, 20000);
+    }
+    input.value = next;
+    applyNow();
+    say(note);
+  }
+  undoBtn.addEventListener('click', () => {
+    input.value = undoText; hideUndo(); applyNow(); scroller.scrollTop = 0; say('Your text is back.'); input.focus();
   });
 
   // Files: button, picker and drag and drop.
   async function readFile(f: File | undefined) {
     if (!f) return;
-    if (f.size > 5_000_000) { status.textContent = 'That file is over 5 MB. Try a smaller one.'; return; }
-    input.value = await f.text();
-    save(); render(); scroller.scrollTop = 0;
-    status.textContent = `Opened ${f.name}. ` + status.textContent;
+    if (f.size > MAX_CHARS) { say('That file is over 5 MB. Try a smaller one.'); return; }
+    if (!/\.(md|markdown|mdown|mkd|txt)$/i.test(f.name) && !f.type.startsWith('text/')) { say('That does not look like a Markdown or text file.'); return; }
+    let text = '';
+    try { text = await f.text(); } catch { say('The file could not be read.'); return; }
+    if (text.includes('\u0000')) { say('That file is not plain text.'); return; }
+    replaceText(text, `Opened ${f.name}.`);
+    scroller.scrollTop = 0;
   }
   $('md-open').addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => { readFile(fileInput.files?.[0]); fileInput.value = ''; });
   input.addEventListener('dragover', (e) => { e.preventDefault(); input.classList.add('border-brand'); });
   input.addEventListener('dragleave', () => input.classList.remove('border-brand'));
   input.addEventListener('drop', (e) => { e.preventDefault(); input.classList.remove('border-brand'); readFile(e.dataTransfer?.files?.[0]); });
-  $('md-sample').addEventListener('click', () => { input.value = SAMPLE; save(); render(); input.focus(); });
-  $('md-clear').addEventListener('click', () => { input.value = ''; save(); render(); input.focus(); });
+  // A file dropped anywhere else must not make the browser leave the page.
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => e.preventDefault());
+  $('md-sample').addEventListener('click', () => { replaceText(SAMPLE); input.focus(); });
+  $('md-clear').addEventListener('click', () => { replaceText(''); input.focus(); });
 
   // Printing: copy the rendered document into #print-root; CSS hides everything else.
   const root = $('print-root');
   document.body.appendChild(root); // must be a direct child of body: print CSS hides every other child
+  const pageTitle = document.title;
+  let hiddenIds: [Element, string][] = [];
   function preparePrint() {
+    if (renderTimer) render(); // a keystroke is still waiting: print what is in the box
     const copy = doc.cloneNode(true) as HTMLElement;
     copy.removeAttribute('id');
+    copy.querySelectorAll('details').forEach((d) => d.setAttribute('open', '')); // closed sections would print as one line
+    while (copy.lastElementChild?.classList.contains('md-pagebreak')) copy.lastElementChild.remove(); // no blank last page
+    // The hidden preview must not own the heading ids, or links in the PDF would point at it.
+    hiddenIds = [...doc.querySelectorAll('[id]')].map((el) => [el, el.id] as [Element, string]);
+    hiddenIds.forEach(([el]) => el.removeAttribute('id'));
     root.replaceChildren(copy);
+    document.title = pdfTitle(input.value); // browsers use the page title as the PDF file name
   }
-  window.addEventListener('beforeprint', preparePrint);
-  window.addEventListener('afterprint', () => root.replaceChildren());
+  function afterPrint() {
+    hiddenIds.forEach(([el, id]) => el.setAttribute('id', id)); hiddenIds = [];
+    root.replaceChildren();
+    document.title = pageTitle;
+  }
+  window.addEventListener('beforeprint', () => { if (!hiddenIds.length) preparePrint(); });
+  window.addEventListener('afterprint', afterPrint);
+  const touch = matchMedia('(pointer: coarse)').matches;
   dl.addEventListener('click', () => {
-    if (input.value.trim() === '') { status.textContent = 'Add some Markdown first, then download.'; input.focus(); return; }
-    render(); preparePrint();
+    if (input.value.trim() === '') { say('Add some Markdown first, then download.'); input.focus(); return; }
+    if (renderTimer) render();
+    if (failed) { say('Fix the text first. The preview could not be built.'); return; }
+    say(touch ? 'Follow the steps under "Saving a PDF on a phone or tablet" below.' : 'In the print dialog, choose "Save as PDF" as the destination.');
+    if (!hiddenIds.length) preparePrint();
     window.print();
-    status.textContent = 'In the print dialog, choose "Save as PDF" as the destination.';
   });
+
+  // Phones: show the sticky Download bar only while the tool is on screen and the keyboard is closed.
+  let toolVisible = true, typing = false;
+  const syncBar = () => dlBar.toggleAttribute('data-off', !toolVisible || typing);
+  new IntersectionObserver(([e]) => { toolVisible = e.isIntersecting; syncBar(); }).observe($('tool'));
+  input.addEventListener('focus', () => { typing = true; syncBar(); });
+  input.addEventListener('blur', () => { typing = false; syncBar(); });
 
   load();
   render();
