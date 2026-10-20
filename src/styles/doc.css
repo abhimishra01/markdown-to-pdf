@@ -35,7 +35,7 @@
 .md-doc kbd { font: .85em ui-monospace, Menlo, Consolas, monospace; border: 1px solid #c8c8cf; border-bottom-width: 2px; border-radius: 4px; padding: .05em .4em; background: #fafafa; }
 .md-doc sup { line-height: 0; }
 .md-doc .footnotes { margin-top: 2em; padding-top: .5em; border-top: 1px solid #d4d4d8; font-size: .9em; color: #3a3a42; }
-.md-doc [data-md-fn-ref], .md-doc [data-md-fn-backref] { text-decoration: none; }
+.md-doc [data-md-fn-ref] { text-decoration: none; }
 .md-doc .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Theme: Classic (serif, book-like) */
